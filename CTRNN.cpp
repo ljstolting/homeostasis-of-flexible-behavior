@@ -454,9 +454,14 @@ TVector<double>& CTRNN::SetHPPhenotype(TVector<double>& phenotype, double dt, bo
   }
   if (!cont){return phenotype;}
 
-  ifstream plasticpars;
-  plasticpars.open("../../plasticpars.dat");
-  plasticpars >> plasticitypars;
+  ifstream plasticparsfile;
+  plasticparsfile.open("../../plasticpars.dat");
+  // plasticparsfile.open("./plasticpars.dat");
+  if (!plasticparsfile){
+    cerr << "plasticpars file not found" << endl;
+    exit(EXIT_FAILURE);
+  }
+  plasticparsfile >> plasticitypars;
   SetPlasticityPars(plasticitypars);
 
   int k = 1;
@@ -745,7 +750,12 @@ void CTRNN::SetHPPhenotypebestind(istream &is, double dt, bool range_encoding){
   // }
 
   ifstream plasticparsfile;
-  plasticparsfile.open("./plasticpars.dat");
+  plasticparsfile.open("../../plasticpars.dat");
+  // plasticparsfile.open("./plasticpars.dat");
+  if (!plasticparsfile){
+    cerr << "plasticpars file not found" << endl;
+    exit(EXIT_FAILURE);
+  }
   for(int i = 1; i <= size + (size*size); i++){
     plasticparsfile >> plasticitypars[i];
   }

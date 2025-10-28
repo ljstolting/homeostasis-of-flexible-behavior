@@ -9,7 +9,7 @@
 
 //EA settings
 const int POPSIZE =      370;
-const int GENS =         100;
+const int GENS =         250;
 // const int trials = 1;    // number of times to run the EA from random starting pop
 const double MUTVAR =    0.1;
 const double CROSSPROB = 0.0;
@@ -181,11 +181,12 @@ double FitnessFunction(TVector<double>& genotype){
     return fit;
 }
 
-int main(){
+int main(int argc, const char* argv[]){
     Evolfile.open("./evol.dat");
 	BestIndividualFile.open("./bestind.dat");
 
     long randomseed = static_cast<long>(time(NULL));
+    if (argc == 2){randomseed += atoi(argv[1]);}
 
     TSearch s(VectSize,FitnessFunction);
     s.SetRandomSeed(randomseed);

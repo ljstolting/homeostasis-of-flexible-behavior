@@ -16,7 +16,7 @@ const double test_dur = 200;     //maximum duration to run the embodied agent to
 const double StepSize = 0.01;
 const double cross_tolerance = 0.5*StepSize; //shift the threshold away from zero so that parameter jiggle can't influence, if relevant
 const double bubble_tolerance = 10*StepSize; //protects against multi-peak oscillations, calculated in state space
-const int rounds = 2; //how many times to repeat the switching process
+const int rounds = 3; //how many times to repeat the switching process
 
 const bool HPon = false; //turns ADHP on or off during velocity measurement
 

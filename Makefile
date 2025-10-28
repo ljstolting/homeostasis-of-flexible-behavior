@@ -7,7 +7,7 @@ CTRNN.o: CTRNN.cpp random.h VectorMatrix.h CTRNN.h
 LeggedAgent.o: LeggedAgent.cpp CTRNN.h random.h LeggedAgent.h
 	g++ -pthread -c -O3 LeggedAgent.cpp
 FlexWalk.o: FlexWalk.cpp CTRNN.h LeggedAgent.h VectorMatrix.h FlexWalk.h
-	g++ -pthread -c -O3 Flexwalk.cpp
+	g++ -pthread -c -O3 FlexWalk.cpp
 TSearch.o: TSearch.cpp TSearch.h
 	g++ -pthread -c -O3 TSearch.cpp
 main.o: main.cpp CTRNN.h TSearch.h FlexWalk.h

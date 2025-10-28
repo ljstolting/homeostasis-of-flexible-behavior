@@ -43,8 +43,8 @@ const double Tnm_R =     0.95;
 const int ctrnnvectsize = (2*N)+(N*N);
 const int VectSize = 2*(ctrnnvectsize)+2*N;
 
-char bestindfname[] = "./bestind.dat";
-// char bestindfname[] = "./best_phen.dat";
+// char bestindfname[] = "./bestind.dat";
+char bestindfname[] = "./best_phen.dat";
 // char bestindfname[] = "walker.ns";
 
 int main(){
@@ -56,11 +56,11 @@ int main(){
     TVector<double> neuromodvec(1,ctrnnvectsize);
 
     TVector<double> phenotype(1,VectSize);
-    // bestindfile >> phenotype;
+    bestindfile >> phenotype;
 
-    // Setup(phenotype,Agent,neuromodvec);
+    Setup(phenotype,Agent,neuromodvec);
 
-    Setup(bestindfile,Agent,neuromodvec);
+    // Setup(bestindfile,Agent,neuromodvec);
 
     cout << "ADHP params" << endl << Agent.NervousSystem.l_boundary << endl << Agent.NervousSystem.u_boundary << endl << Agent.NervousSystem.windowsize << endl << Agent.NervousSystem.tausBiases << endl;
     cout << "neuromodulatory params" << endl << neuromodvec << endl;
