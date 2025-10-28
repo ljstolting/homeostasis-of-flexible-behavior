@@ -1,5 +1,5 @@
-stest.exe: maintest.o CTRNN.o TSearch.o random.o LeggedAgent.o FlexWalk.o
-	g++ -pthread -o maintest.exe maintest.o CTRNN.o TSearch.o random.o LeggedAgent.o FlexWalk.o
+main.exe: main.o CTRNN.o TSearch.o random.o LeggedAgent.o FlexWalk.o
+	g++ -pthread -o main.exe main.o CTRNN.o TSearch.o random.o LeggedAgent.o FlexWalk.o
 random.o: random.cpp random.h VectorMatrix.h
 	g++ -pthread -c -O3 random.cpp
 CTRNN.o: CTRNN.cpp random.h VectorMatrix.h CTRNN.h
@@ -10,7 +10,7 @@ FlexWalk.o: FlexWalk.cpp CTRNN.h LeggedAgent.h VectorMatrix.h FlexWalk.h
 	g++ -pthread -c -O3 Flexwalk.cpp
 TSearch.o: TSearch.cpp TSearch.h
 	g++ -pthread -c -O3 TSearch.cpp
-maintest.o: maintest.cpp CTRNN.h TSearch.h FlexWalk.h
-	g++ -pthread -c -O3 maintest.cpp
+main.o: main.cpp CTRNN.h TSearch.h FlexWalk.h
+	g++ -pthread -c -O3 main.cpp
 clean:
-	rm *.o maintest.exe
+	rm *.o main.exe

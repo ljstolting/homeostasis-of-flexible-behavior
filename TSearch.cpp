@@ -47,7 +47,7 @@ void OutOfMemoryHandler(void)
 
 // The constructor
 
-TSearch::TSearch(int VSize, double (*EvalFn)(TVector<double> &, TMatrix<double> &, RandomState &))
+TSearch::TSearch(int VSize, double (*EvalFn)(TVector<double> &))
 {
 	// Install a default new handler if none is currently installed
 	new_handler OldHandler;
@@ -483,6 +483,7 @@ void TSearch::DisplayPopulationStatistics(void)
 }
 
 
+
 // Display the results of a search
 
 void TSearch::DisplaySearchResults(void)
@@ -525,7 +526,7 @@ int TSearch::SearchTerminated(void)
 
 double TSearch::EvaluateVector(TVector<double> &v, RandomState &rs)
 {
-	double perf = (*EvaluationFunction)(v, Initialpts, rs);
+	double perf = (*EvaluationFunction)(v);
 
 	return (perf<0)?0:perf;
 }
@@ -576,6 +577,7 @@ void TSearch::EvaluatePopulation(int start)
 #else // Evaluate the population serially
 	for (int i = start; i <= Population.Size(); i++)
 		Perf[i] = EvaluateVector(Population[i], RandomStates[i]);
+		// cout << "Individual Evaluated" << endl;
 #endif
 }
 
