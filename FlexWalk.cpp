@@ -18,7 +18,7 @@ const double cross_tolerance = 0.5*StepSize; //shift the threshold away from zer
 const double bubble_tolerance = 10*StepSize; //protects against multi-peak oscillations, calculated in state space
 const int rounds = 3; //how many times to repeat the switching process
 
-const bool HPon = false; //turns ADHP on or off during velocity measurement
+const bool HPon = true; //turns ADHP on or off during velocity measurement
 
 //Calcuate the instantaneous walking velocity by running the homeostatic walker for some time (def = 50 seconds), 
 // then measuring the time and distance of the next full neuron cycle -- now calculated from peak to peak
