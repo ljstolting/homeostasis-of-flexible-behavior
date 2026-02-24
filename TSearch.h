@@ -139,7 +139,7 @@ class TSearch {
 		double AvgPerformance (void) {return AvgPerf;};
 		double PerfVariance (void) {return PerfVar;};
 		// Control
-		void InitializeSearch(bool CenterCrossing, int N=3, double parmin=-16, double parmax=16);
+		void InitializeSearch(bool CenterCrossing, int N=2, double parmin=-16, double parmax=16);
 		void ExecuteSearch(bool CC);
 		void ResumeSearch(void);
 		// Input and output

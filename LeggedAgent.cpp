@@ -53,6 +53,14 @@ void LeggedAgent::Reset(double ix, double iy, int randomize, RandomState &rs)
 	// else NervousSystem.RandomizeCircuitOutput(0.5,0.5);
 }
 
+void LeggedAgent::DragBack(void)
+{ //puts agent back at the starting line without disrupting its body or nervous system
+	cx = 0.0;
+	Leg.JointX = cx; Leg.JointY = cy + 12.5;
+	Leg.FootX = Leg.JointX + LegLength * sin(Leg.Angle);
+	Leg.FootY = Leg.JointY + LegLength * cos(Leg.Angle);
+}
+
 void LeggedAgent::StepCPG(double StepSize, bool adaptpars)
 {
 	double force = 0.0;
@@ -439,4 +447,21 @@ void LeggedAgent::PerfectStep(double StepSize)
 	}
 	// If the foot is too far back, the body becomes "unstable" and forward motion ceases
 	if (fabs(cx - Leg.FootX) > 20) vx = 0.0;
+}
+
+void LeggedAgent::Walk(double time, double StepSize)
+{	//measure fitness the "dumb" way as distance traveled in a fixed amount of time
+	for(double t = 0; t < time; t += StepSize){
+		Step2CPG(StepSize,false);
+	}
+
+}
+
+void LeggedAgent::Walk(double time, double StepSize, ofstream &outputs)
+{	//measure fitness the "dumb" way as distance traveled in a fixed amount of time
+	for(double t = 0; t < time; t += StepSize){
+		Step2CPG(StepSize,false);
+		outputs << NervousSystem.outputs << endl;
+	}
+
 }

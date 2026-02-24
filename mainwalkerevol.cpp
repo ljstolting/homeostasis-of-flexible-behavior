@@ -1,4 +1,5 @@
 //Evolve Single-Legged Walkers without Flexibility or Homeostatic plasticity 
+//I will then hand-design an ADHP mechanism that accommodates the most similar forward and backward walker
 
 #include "CTRNN.h"
 #include "LeggedAgent.h"
@@ -8,18 +9,19 @@
 #include "random.h"
 
 //EA settings
-const int POPSIZE =      100;
+const int POPSIZE =      5000;
 const int GENS =         100;
-// const int trials = 1;    // number of times to run the EA from random starting pop
 const double MUTVAR =    0.1;
 const double CROSSPROB = 0.0;
 const double EXPECTED =  1.1;
 const double ELITISM =   0.1;
-const bool seed_CC =     false; //seed with center crossing circuits?
+const bool seed_CC =     true; //seed with center crossing circuits?
 
 //CTRNN settings
 const double StepSize = 0.01;
-const int N = 2;          
+const int N = 2;   
+// Evolution Vector Size Calculation
+const int VectSize = (2*N)+(N*N);       
 
 //Define Evolution Ranges
 const double WR =        10.0; //-10 -> +10 (smaller range used so that maximum ADHP traversal time is lower)
@@ -27,9 +29,10 @@ const double BR =        10.0; //(WR*N)/2; //<-enable to for allowing center cro
 const double T_min =      0.1; 
 const double T_max =      2.0; 
 
-
-// Evolution Vector Size Calculation
-const int ctrnngenomesize = (2*N)+(N*N);
+//Task Params
+const bool backwards = true;
+const double testdur = 500; //how long to run the agent for fitness evaluation
+const double transient = 150; //how long to run the agent before starting to evaluate fitness (allows it to get into a limit cycle)
 
 // ------------------------------------
 // Genotype-Phenotype Mapping Functions  - GENERALIZED to use parameter vectors for both adhp and neuromodulators
@@ -55,38 +58,6 @@ void GenPhenMapping(TVector<double> &gen, TVector<double> &phen)
             k ++;
         }
     }
-
-    // ADHP
-	// Lower Bounds
-	for (int i = 1; i <= num; i++) {
-		phen(k) = MapSearchParameter(gen(k), LB_min, LB_max);
-		k++;
-	}
-	// Ranges
-	for (int i = 1; i <= num; i++) {
-		phen(k) = MapSearchParameter(gen(k), Range_min, Range_max);
-		k++;
-	}
-    
-    //NEUROMODULATORY VECTOR
-    // Taus
-    for (int i = 1; i <= N; i++) {
-        phen(k) = MapSearchParameter(gen(k), -Tnm_R, Tnm_R);
-        k ++;
-    }
-    // Biases
-    for (int i = 1; i <= N; i++) {
-        phen(k) = MapSearchParameter(gen(k), -Bnm_R, Bnm_R);
-        k ++;
-    }
-    // Weights
-    for (int i = 1; i <= N; i++) {
-        for (int j = 1; j <= num; j++){
-            phen(k) = MapSearchParameter(gen(k), -Wnm_R, Wnm_R);
-            k ++;
-        }
-    } 
-
 }
 
 // ------------------------------------
@@ -94,8 +65,8 @@ void GenPhenMapping(TVector<double> &gen, TVector<double> &phen)
 // ------------------------------------
 ofstream Evolfile;
 ofstream BestIndividualFile;
+ofstream TrajectoryFile;
 
-int trial = 1;
 void ResultsDisplay(TSearch &s)
 {
 	TVector<double> bestVector;
@@ -106,24 +77,23 @@ void ResultsDisplay(TSearch &s)
 	bestVector = s.BestIndividual();
 	GenPhenMapping(bestVector, phenotype);
 
-    TVector<double> neuromodvec(1,ctrnngenomesize);
     LeggedAgent Agent;
-    Setup(phenotype,Agent,neuromodvec); //fills empty neuromodulatory vector
-    //default should take care of the plasticity time constants but it doesn't...
-    // for(int i = 1; i <= Agent.NervousSystem.CircuitSize(); i ++){
-    //     Agent.NervousSystem.SetNeuronBiasTimeConstant(i,Btau);
-    // }
-    //CTRNN output
-    TakeDown(Agent,BestIndividualFile,neuromodvec);
-    // Other things I might consider wanting later... or splitting into separate files, of course. 
-	// cout << plasticitypars << endl;
-	// BestIndividualFile << trial << endl;
-	// BestIndividualFile << plasticitypars << endl;
+    Agent.NervousSystem.SetCircuitSize(N);
+    phenotype >> Agent.NervousSystem;
 
-	// cout << trial << "finished" << endl;
-    FlexibleWalking(Agent,neuromodvec,plasticitydur,true);
+    for (double t = 0; t < transient; t += StepSize){
+        Agent.Step2CPG(StepSize,false);
+    }
+    Agent.DragBack();
+    cout << Agent.cx << " " << Agent.cy << endl;
 
-	trial ++;
+    double init_x = Agent.PositionX();
+
+    Agent.Walk(testdur, StepSize,TrajectoryFile);
+
+    double fitness = (Agent.PositionX() - init_x)/testdur;
+    
+    cout << "Best fitness:" << fitness << endl;
 }
 
 void EvolutionaryRunDisplay(TSearch &s)
@@ -144,18 +114,23 @@ void EvolutionaryRunDisplay(TSearch &s)
 
 //actual fitness function in form GA needs
 double FitnessFunction(TVector<double>& genotype){
-    // cout << "Fitness func started " << endl;
+
     TVector<double> phenotype(1,genotype.UpperBound());
     GenPhenMapping(genotype,phenotype);
-    // cout << "mapped" << endl;
-    LeggedAgent Agent; //should return with 3 neurons by default....
-    // cout << Agent.NervousSystem.CircuitSize();
-    TVector<double> neuromodvec(1,ctrnngenomesize);
-    Setup(phenotype, Agent, neuromodvec);
-    // for(int i = 1; i <= Agent.NervousSystem.CircuitSize(); i ++){
-    //     Agent.NervousSystem.SetNeuronBiasTimeConstant(i,Btau);
-    // }
-    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur);
+
+    LeggedAgent Agent;
+    Agent.NervousSystem.SetCircuitSize(N);
+    phenotype >> Agent.NervousSystem;
+
+    for (double t = 0; t < transient; t += StepSize){
+        Agent.Step2CPG(StepSize,false);
+    }
+    double init_x = Agent.PositionX();
+
+    Agent.Walk(testdur, StepSize);
+
+    double fit = (Agent.PositionX() - init_x)/testdur;
+    fit = fit * (-1*backwards); //if backwards is true, then we want to minimize forward distance, which is the same as maximizing backward distance
 
     return fit;
 }
@@ -163,6 +138,7 @@ double FitnessFunction(TVector<double>& genotype){
 int main(int argc, const char* argv[]){
     Evolfile.open("./evol.dat");
 	BestIndividualFile.open("./bestind.dat");
+    TrajectoryFile.open("./trajectory.dat");
 
     long randomseed = static_cast<long>(time(NULL));
     if (argc == 2){randomseed += atoi(argv[1]);}
@@ -188,6 +164,7 @@ int main(int argc, const char* argv[]){
 
     Evolfile.close();
 	BestIndividualFile.close();
+    TrajectoryFile.close();
     
     return 0;
 }

@@ -56,11 +56,10 @@ class LeggedAgent {
 		// Control
 		void Reset(double ix, double iy, int randomize = 0);
 		void Reset(double ix, double iy, int randomize, RandomState &rs);
-		void StepCPG(double StepSize, bool adaptpars); //this is the only one that we're going to be using in this repo...should i delete the others? just commented out because might get suggestions (i.e. need RPG or 2 neuron)
-		// void StepRPG(double StepSize);
+		void DragBack(void);
+		void StepCPG(double StepSize, bool adaptpars); 
 		void Step2CPG(double StepSize, bool adaptpars); // updated to read out foot and force neurons instead of fs, bs
-		// void Step2RPG(double StepSize);
-		// void Step1CPG(double StepSize);
-		// void Step1RPG(double StepSize);
 		void PerfectStep(double StepSize);
+		void Walk(double time, double StepSize);
+		void Walk(double time, double StepSize, ofstream &outputs); //overloaded version that also outputs the trajectory to a file
 };
