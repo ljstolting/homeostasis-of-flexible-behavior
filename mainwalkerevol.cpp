@@ -84,14 +84,13 @@ void ResultsDisplay(TSearch &s)
     for (double t = 0; t < transient; t += StepSize){
         Agent.Step2CPG(StepSize,false);
     }
-    Agent.DragBack();
-    cout << Agent.cx << " " << Agent.cy << endl;
 
     double init_x = Agent.PositionX();
 
     Agent.Walk(testdur, StepSize,TrajectoryFile);
+    BestIndividualFile << Agent.NervousSystem;
 
-    double fitness = (Agent.PositionX() - init_x)/testdur;
+    double fitness = (Agent.PositionX() - init_x)/testdur; // not reversed here 
     
     cout << "Best fitness:" << fitness << endl;
 }
@@ -130,7 +129,7 @@ double FitnessFunction(TVector<double>& genotype){
     Agent.Walk(testdur, StepSize);
 
     double fit = (Agent.PositionX() - init_x)/testdur;
-    fit = fit * (-1*backwards); //if backwards is true, then we want to minimize forward distance, which is the same as maximizing backward distance
+    fit = fit * (1-2*backwards); //if backwards is true, then we want to minimize forward distance, which is the same as maximizing backward distance
 
     return fit;
 }

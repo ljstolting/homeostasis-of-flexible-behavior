@@ -1,5 +1,5 @@
-mainwalkerevol.exe: mainwalkerevol.o CTRNN.o TSearch.o random.o LeggedAgent.o FlexWalk.o
-	g++ -pthread -o mainwalkerevol.exe mainwalkerevol.o CTRNN.o TSearch.o random.o LeggedAgent.o FlexWalk.o
+mainwalkerevol_backward.exe: mainwalkerevol.o CTRNN.o TSearch.o random.o LeggedAgent.o FlexWalk.o
+	g++ -pthread -o mainwalkerevol_backward.exe mainwalkerevol.o CTRNN.o TSearch.o random.o LeggedAgent.o FlexWalk.o
 random.o: random.cpp random.h VectorMatrix.h
 	g++ -pthread -c -O3 random.cpp
 CTRNN.o: CTRNN.cpp random.h VectorMatrix.h CTRNN.h
@@ -7,7 +7,7 @@ CTRNN.o: CTRNN.cpp random.h VectorMatrix.h CTRNN.h
 LeggedAgent.o: LeggedAgent.cpp CTRNN.h random.h LeggedAgent.h
 	g++ -pthread -c -O3 LeggedAgent.cpp
 FlexWalk.o: FlexWalk.cpp CTRNN.h LeggedAgent.h VectorMatrix.h FlexWalk.h
-	g++ -pthread -c -O3 Flexwalk.cpp
+	g++ -pthread -c -O3 FlexWalk.cpp
 TSearch.o: TSearch.cpp TSearch.h
 	g++ -pthread -c -O3 TSearch.cpp
 mainwalkerevol.o: mainwalkerevol.cpp CTRNN.h TSearch.h FlexWalk.h
