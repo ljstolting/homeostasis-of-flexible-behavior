@@ -16,15 +16,13 @@ const double test_dur = 200;     //maximum duration to run the embodied agent to
 const double StepSize = 0.01;
 const double cross_tolerance = 0.5*StepSize; //shift the threshold away from zero so that parameter jiggle can't influence, if relevant
 const double bubble_tolerance = 10*StepSize; //protects against multi-peak oscillations, calculated in state space
-const int rounds = 3; //how many times to repeat the switching process
+const int rounds = 5; //how many times to repeat the switching process
 
 const bool HPon = true; //turns ADHP on or off during velocity measurement
 
 //Calcuate the instantaneous walking velocity by running the homeostatic walker for some time (def = 50 seconds), 
 // then measuring the time and distance of the next full neuron cycle -- now calculated from peak to peak
-double meas_velocity(LeggedAgent& Agent, bool record, double synchronization_time){
-    ofstream timeseriesfile;
-    timeseriesfile.open("neuraltimeseries.dat");
+double meas_velocity(LeggedAgent& Agent, ofstream &timeseriesfile, ofstream &paramsfile, bool record, double synchronization_time){
     double vel = 0;
     int N = Agent.NervousSystem.size;
     double sync_time = 0;
@@ -46,8 +44,9 @@ double meas_velocity(LeggedAgent& Agent, bool record, double synchronization_tim
             Agent.StepCPG(StepSize,HPon); //
             // //record or not record during the leg synchronization time
             if(record){
-                timeseriesfile << sync_time << " " << Agent.NervousSystem.outputs << endl;
-                timeseriesfile << sync_time + test_time << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
+                timeseriesfile << " " << Agent.NervousSystem.outputs << endl;
+                // bodyfile << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
+                paramsfile << " " << Agent.NervousSystem.biases << endl;
             }
             sync_time += StepSize;
         }
@@ -65,8 +64,9 @@ double meas_velocity(LeggedAgent& Agent, bool record, double synchronization_tim
 
         while ((peak_count<2)&(test_time < test_dur)){
             if(record){
-                timeseriesfile << sync_time + test_time << " " << Agent.NervousSystem.NeuronOutput(1) << " " <<  Agent.NervousSystem.NeuronOutput(2) << " " <<  Agent.NervousSystem.NeuronOutput(3) << endl;
-                timeseriesfile << sync_time + test_time << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
+                timeseriesfile << " " << Agent.NervousSystem.NeuronOutput(1) << " " <<  Agent.NervousSystem.NeuronOutput(2) << " " <<  Agent.NervousSystem.NeuronOutput(3) << endl;
+                paramsfile << " " << Agent.NervousSystem.biases << endl;
+                // bodyfile << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
             }
         
             test_time += StepSize;
@@ -113,7 +113,6 @@ double meas_velocity(LeggedAgent& Agent, bool record, double synchronization_tim
         }
         //choice to only count fitness if i was able to detect a cycle and if the foot goes up and down
         // vel = Agent.PositionX()/total_time;             //or to always count it even if there is no formal oscillation
-        timeseriesfile.close();
     }
     return vel;
 }
@@ -279,6 +278,13 @@ void Shift_NM(TVector<double>& neuromodvec,int shift_num){
 
 //given a set up individual, calculate the fitness as prescribed
 double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double plasticitydur,bool debug){
+    ofstream timeseriesfile;
+    timeseriesfile.open("neuraltimeseries.dat");
+    ofstream paramsfile;
+    paramsfile.open("neuralparameters.dat");
+    // ofstream bodyfile;
+    // bodyfile.open("bodytimeseries.dat");
+
     // cout << "neuromodvec " << neuromodvec << endl;
     int N = Agent.NervousSystem.CircuitSize();
     // ...and shifting the time constants to the end of the vector
@@ -304,9 +310,14 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
         // Allow ADHP to run for designated time
         for (double i = StepSize; i <= plasticitydur; i += StepSize){
             Agent.NervousSystem.EulerStep(StepSize, true);
+            if (debug){
+                timeseriesfile <<  " " << Agent.NervousSystem.NeuronOutput(1) << " " <<  Agent.NervousSystem.NeuronOutput(2) << " " <<  Agent.NervousSystem.NeuronOutput(3) << endl;
+                paramsfile << " " << Agent.NervousSystem.biases << endl;
+                // bodyfile << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
+            }
         }
         // Test unmodulated velocity at homeostatic steady state
-        unmodulated_vel = meas_velocity(Agent,debug);
+        unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug,plasticitydur);
         unmodulated_tests ++;
         if (debug){
             cout << "unmodulated, after ADHP" << endl << Agent.NervousSystem.biases << endl << unmodulated_vel << endl;
@@ -319,12 +330,17 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
             // Allow ADHP to run for designated time
             for (double i = StepSize; i <= plasticitydur; i += StepSize){
                 Agent.NervousSystem.EulerStep(StepSize, true);
+                if (debug){
+                    timeseriesfile << " " << Agent.NervousSystem.NeuronOutput(1) << " " <<  Agent.NervousSystem.NeuronOutput(2) << " " <<  Agent.NervousSystem.NeuronOutput(3) << endl;
+                    paramsfile << " " << Agent.NervousSystem.biases << endl;
+                    // bodyfile  << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
+                }
             }
             if (debug){
                 cout << "unmodulated, after ADHP, before test" << endl << Agent.NervousSystem.biases << endl;
             }
             // Test unmodulated velocity at homeostatic steady state
-            unmodulated_vel = meas_velocity(Agent,debug);
+            unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug);
             unmodulated_tests ++;
             if (debug){
                 cout << "unmodulated, after ADHP, after test" << endl << Agent.NervousSystem.biases << endl << unmodulated_vel << endl;
@@ -338,7 +354,7 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
             }
 
             //and measure the immediate modulated velocity
-            modulated_vel = meas_velocity(Agent,debug); 
+            modulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug); 
             modulated_tests ++;
             if (debug){
                 cout << "modulated, before ADHP, after test" << endl << Agent.NervousSystem.biases << endl << modulated_vel << endl;
@@ -348,13 +364,18 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
             //allow plasticity to occur in modulated state
             for (double i = StepSize; i <= plasticitydur; i += StepSize){
                 Agent.NervousSystem.EulerStep(StepSize, true);
+                if (debug){
+                    timeseriesfile << " " << Agent.NervousSystem.NeuronOutput(1) << " " <<  Agent.NervousSystem.NeuronOutput(2) << " " <<  Agent.NervousSystem.NeuronOutput(3) << endl;
+                    paramsfile << " " << Agent.NervousSystem.biases << endl;
+                    // bodyfile  << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
+                }
             }
             if (debug){
                 cout << "modulated, after ADHP, before test" << endl << Agent.NervousSystem.biases << endl;
             }
 
             // measure modulated velocity at modulated homeostatic steady state
-            modulated_vel = meas_velocity(Agent,debug);
+            modulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug);
             modulated_tests ++;
             if (debug){
                 cout << "modulated, after ADHP, after test" << endl << Agent.NervousSystem.biases << endl << modulated_vel << endl;
@@ -370,7 +391,7 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
             }
 
             //measure the immediate unmodulated velocity
-            unmodulated_vel = meas_velocity(Agent,debug);
+            unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug);
             unmodulated_tests ++;
             if (debug){
                 cout << "unmodulated, before ADHP, after test" << endl << Agent.NervousSystem.biases << endl << unmodulated_vel << endl;
@@ -384,5 +405,8 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
 
     double fit = abs(avg_unmodulated_vel - avg_modulated_vel); //maximum fitness is 2*6.27 --max speed both directions
 
+    timeseriesfile.close();
+    // bodyfile.close();
+    paramsfile.close();
     return fit;
 }

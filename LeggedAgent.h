@@ -58,7 +58,7 @@ class LeggedAgent {
 		void Reset(double ix, double iy, int randomize, RandomState &rs);
 		void StepCPG(double StepSize, bool adaptpars); //this is the only one that we're going to be using in this repo...should i delete the others? just commented out because might get suggestions (i.e. need RPG or 2 neuron)
 		// void StepRPG(double StepSize);
-		// void Step2CPG(double StepSize);
+		void Step2CPG(double StepSize, bool adaptpars); // updated to read out foot and force neurons instead of fs, bs
 		// void Step2RPG(double StepSize);
 		// void Step1CPG(double StepSize);
 		// void Step1RPG(double StepSize);

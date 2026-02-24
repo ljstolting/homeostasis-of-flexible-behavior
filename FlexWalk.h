@@ -9,7 +9,7 @@
 #include "LeggedAgent.h"
 #include "VectorMatrix.h"
 
-double meas_velocity(LeggedAgent& Agent, bool record = false, double synchronization_time = 100);
+double meas_velocity(LeggedAgent& Agent,  ofstream &timeseriesfile, ofstream &paramsfile, bool record=false, double synchronization_time=100);
 void Setup(TVector<double>& phen, LeggedAgent& Agent, TVector<double>& neuromodvec);//read agent from phenotype vector
 void Setup(ifstream& bestind, LeggedAgent& Agent, TVector<double>& neuromodvec);  //overload to read from file
 void TakeDown(LeggedAgent& Agent, ostream& indivout, TVector<double>& neuromodvec);
