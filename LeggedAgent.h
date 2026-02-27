@@ -60,6 +60,7 @@ class LeggedAgent {
 		void StepCPG(double StepSize, bool adaptpars); 
 		void Step2CPG(double StepSize, bool adaptpars); // updated to read out foot and force neurons instead of fs, bs
 		void PerfectStep(double StepSize);
-		void Walk(double time, double StepSize);
-		void Walk(double time, double StepSize, ofstream &outputs); //overloaded version that also outputs the trajectory to a file
+		void Walk(double time, double StepSize, bool adaptpars); //measure fitness the "dumb" way as distance traveled in a fixed amount of time
+		                                     //adaptpars is whether to allow adhp to act during the walk or not
+		void Walk(double time, double StepSize, bool adaptpars, ofstream &outputs); //overloaded version that also outputs the trajectory to a file
 };

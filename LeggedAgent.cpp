@@ -449,18 +449,18 @@ void LeggedAgent::PerfectStep(double StepSize)
 	if (fabs(cx - Leg.FootX) > 20) vx = 0.0;
 }
 
-void LeggedAgent::Walk(double time, double StepSize)
+void LeggedAgent::Walk(double time, double StepSize, bool adaptpars)
 {	//measure fitness the "dumb" way as distance traveled in a fixed amount of time
 	for(double t = 0; t < time; t += StepSize){
-		Step2CPG(StepSize,false);
+		Step2CPG(StepSize,adaptpars);
 	}
 
 }
 
-void LeggedAgent::Walk(double time, double StepSize, ofstream &outputs)
+void LeggedAgent::Walk(double time, double StepSize, bool adaptpars, ofstream &outputs)
 {	//measure fitness the "dumb" way as distance traveled in a fixed amount of time
 	for(double t = 0; t < time; t += StepSize){
-		Step2CPG(StepSize,false);
+		Step2CPG(StepSize,adaptpars);
 		outputs << NervousSystem.outputs << endl;
 	}
 

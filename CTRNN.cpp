@@ -721,7 +721,7 @@ void CTRNN::WriteHPGenome(ostream& os){
   os << endl;
 
   // write the upper bounds or ranges
-  if(!shiftedrho){
+  if(!shiftedrho){ //proxy for range encoding
     for (int i = 1; i<=num_pars_changed; i++){
       os << PlasticityUB(i) << " ";
     }
