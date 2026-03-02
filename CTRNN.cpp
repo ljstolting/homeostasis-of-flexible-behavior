@@ -118,7 +118,7 @@ void CTRNN::SetCircuitSize(int newsize)
   //   RtausBiases[i] = 1/tausBiases[i];
   // }
   tausBiases.FillContents(100);          //DEFAULT SETTING IS PLASTICITY TIME CONSTANTS = 100
-  RtausBiases.FillContents(1.0);
+  RtausBiases.FillContents(0.01);         //mirrored here
   tausWeights.SetBounds(1,size,1,size);
   RtausWeights.SetBounds(1,size,1,size);
   // for(int i=1;i<=size;i++){
@@ -128,7 +128,7 @@ void CTRNN::SetCircuitSize(int newsize)
   //   }
   // }
   tausWeights.FillContents(100);
-  RtausWeights.FillContents(1.0);
+  RtausWeights.FillContents(0.01);
 
   // NEW for AVERAGING
   windowsize.SetBounds(1,size);
@@ -181,7 +181,15 @@ void CTRNN::SetCircuitSize(int newsize)
 
 // Reset all sliding window utilities and the step counter (crucial if using the same circuit between parameter resets)
 void CTRNN::WindowReset(){
-  // cout << "Window Resetting" << endl;
+  max_windowsize = windowsize.Max();
+  // cout << "Max window size:" << max_windowsize << endl;
+  avgoutputs.SetBounds(1,size);
+  outputhist.SetBounds(1,windowsize.Sum());
+  int cumulative = 1;
+  for (int neuron = 1; neuron <= size; neuron++){
+    outputhiststartidxs(neuron) = cumulative;
+    cumulative += windowsize(neuron);
+  }
   minavg.FillContents(1);
   maxavg.FillContents(0);
   sumoutputs.FillContents(0);
@@ -537,18 +545,7 @@ TVector<double>& CTRNN::SetHPPhenotype(TVector<double>& phenotype, double dt, bo
   }
 
   // IT IS CRUCIAL TO FIX THE SLIDING WINDOW AVERAGING BEFORE EVALUATION
-  // Just in case there is not a transient long enough to fill up the history before HP needs to activate
-  max_windowsize = windowsize.Max();
-  avgoutputs.SetBounds(1,size);
-  // cout << windowsize << endl;
-  outputhist.SetBounds(1,windowsize.Sum());
-  int cumulative = 1;
-  for (int neuron = 1; neuron <= size; neuron++){
-    outputhiststartidxs(neuron) = cumulative;
-    cumulative += windowsize(neuron);
-  }
   WindowReset();
-  // cout << outputhist << endl;
 	return phenotype;
 }
 
@@ -622,7 +619,6 @@ istream& CTRNN::SetHPPhenotype(istream& is, double dt, bool range_encoding){
       }
       else{
         is >> btau;
-        // cout << btau << " ";
         SetNeuronBiasTimeConstant(i,btau);
       }
     } 

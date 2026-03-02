@@ -10,16 +10,15 @@
 
 //CTRNN settings
 const double StepSize = 0.01;
-const int N = 2;          //this repository will not be general to higher neural dimensions - must be 3 neuron CTRNN.
-                         //you CAN change the number of neurons that are controlled by ADHP
+const int N = 2;         
+
 //ADHP settings
-const bool shiftedrho = true;
-const int num =          3; //future: SUM OF SOME INPUT FILE
+const int num =          2; //future: SUM OF SOME INPUT FILE
 const double Btau =      100;  //setting the time constant of regulation to the lowest value from before
 const double SW =        0;    //setting the sliding window averaging to zero
 
-const double plasticitydur = 500; //in seconds
-const double transient = 150;   
+const double plasticitydur = 5500; //in seconds
+// const double transient = 150;   
 
 //Neuromodulation settings
 // const int num_NM =       3; //future: SUM OF SOME INPUT FILE, change genphenmapping function to be more like arbdparam
@@ -44,48 +43,67 @@ const double Tnm_R =     0.95;
 const int ctrnnvectsize = (2*N)+(N*N);
 const int VectSize = 2*(ctrnnvectsize)+2*N;
 
+//USING BESTIND FILE
 char bestindfname[] = "./best_test.dat";
+//USING PHENOTYPE FILE
 // char bestindfname[] = "./best_phen.dat";
-// char bestindfname[] = "walker.ns";
+//USING INDIVIDUAL WALKER FILE - DEBUGGING
+// char bestindfname[] = "./Forward Walkers/3/bestind.dat";
+
+char adhpfname[] = "./ADHP Mechanisms/best3_38.dat";
 
 int main(){
     ifstream bestindfile;
     bestindfile.open(bestindfname);
+
+    //debugging
+    ifstream adhpfile;
+    adhpfile.open(adhpfname);
 
     ofstream trajectoryfile;
     trajectoryfile.open("./trajectory.dat");
 
     LeggedAgent Agent;
     Agent.NervousSystem.SetCircuitSize(N);
-    bestindfile >> Agent.NervousSystem;
-
     TVector<double> neuromodvec(1,ctrnnvectsize);
 
-    TVector<double> phenotype(1,VectSize);
+    // USING BESTIND FILE
+    Setup(bestindfile,Agent,neuromodvec);
+
+    //USING PHENOTYPE FILE
+    // TVector<double> phenotype(1,VectSize);
     // bestindfile >> phenotype;
+    // cout << "Phenotype read from file: " << phenotype << endl;
 
     // Setup(phenotype,Agent,neuromodvec);
 
-    // Setup(bestindfile,Agent,neuromodvec);
+    //USING INDIVIDUAL WALKER FILE - DEBUGGING
+    // bestindfile >> Agent.NervousSystem;
+    // Agent.NervousSystem.ShiftedRho(true);
+    // Agent.NervousSystem.SetHPPhenotype(adhpfile, StepSize, true);
 
-    // cout << "ADHP params" << endl << Agent.NervousSystem.l_boundary << endl << Agent.NervousSystem.u_boundary << endl << Agent.NervousSystem.windowsize << endl << Agent.NervousSystem.tausBiases << endl;
-    // cout << "neuromodulatory params" << endl << neuromodvec << endl;
+    cout << "Initial Parameters: " << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases << endl << Agent.NervousSystem.weights << endl;
+    cout << "ADHP params:" << endl << Agent.NervousSystem.l_boundary << endl << Agent.NervousSystem.u_boundary << endl << Agent.NervousSystem.windowsize << endl << Agent.NervousSystem.tausBiases << endl << Agent.NervousSystem.plasticitypars << endl << endl;
+    cout << "neuromodulatory params:" << endl << neuromodvec << endl << endl;
 
-    // double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,true);
+    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,0,true);
 
-    for (double t = 0; t < transient; t += StepSize){
-        Agent.Step2CPG(StepSize,false);
-    }
+    // for (double t = 0; t < transient; t += StepSize){
+    //     Agent.Step2CPG(StepSize,false);
+    // }
 
-    double init_x = Agent.PositionX();
+    // double init_x = Agent.PositionX();
 
-    Agent.Walk(plasticitydur, StepSize,trajectoryfile);
+    // Agent.Walk(plasticitydur, StepSize, false, trajectoryfile);
 
-    double fit = (Agent.PositionX() - init_x)/plasticitydur;
+    // double fit = (Agent.PositionX() - init_x)/plasticitydur;
     
-    cout << Agent.cx << " " << Agent.Leg.FootX << endl;
-    cout << fit << endl;
+    // cout << Agent.cx << " " << Agent.Leg.FootX << endl;
+    // cout << fit << endl;
+    // -4.49679 -1.90087
+
     bestindfile.close();
+    adhpfile.close();
     trajectoryfile.close();
 
     return 0;

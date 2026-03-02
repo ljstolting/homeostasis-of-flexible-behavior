@@ -9,7 +9,8 @@
 #include "LeggedAgent.h"
 #include "VectorMatrix.h"
 
-double meas_velocity(LeggedAgent& Agent,  ofstream &timeseriesfile, ofstream &paramsfile, bool record=false, double synchronization_time=100);
+void step_function(LeggedAgent& Agent);
+double meas_velocity(LeggedAgent& Agent,  ofstream &timeseriesfile, ofstream &paramsfile, bool record=false, double synchronization_time=0);
 void Setup(TVector<double>& phen, LeggedAgent& Agent, TVector<double>& neuromodvec);//read agent from phenotype vector
 void Setup(ifstream& bestind, LeggedAgent& Agent, TVector<double>& neuromodvec);  //overload to read from file
 void TakeDown(LeggedAgent& Agent, ostream& indivout, TVector<double>& neuromodvec);
@@ -17,4 +18,4 @@ void Modulate(LeggedAgent& Agent, TVector<double>& neuromodvec);
 void Modulate(LeggedAgent& Agent, TVector<double>& neuromodvec, TVector<int>& modulatedpars); //overload to allow specification of different modulated parameters
 void Reverse_NM(TVector<double>& neuromodvec);
 void Shift_NM(TVector<double>& neuromodvec,int shift_num);
-double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec, double plasticitydur, bool debug=false);
+double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec, double plasticitydur, int rounds, bool debug=false);

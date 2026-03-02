@@ -30,7 +30,7 @@ const double T_min =      0.1;
 const double T_max =      2.0; 
 
 //Task Params
-const bool backwards = true;
+const bool backwards = true; //reward forward or backward walking?
 const double testdur = 500; //how long to run the agent for fitness evaluation
 const double transient = 150; //how long to run the agent before starting to evaluate fitness (allows it to get into a limit cycle)
 
@@ -87,7 +87,7 @@ void ResultsDisplay(TSearch &s)
 
     double init_x = Agent.PositionX();
 
-    Agent.Walk(testdur, StepSize,TrajectoryFile);
+    Agent.Walk(testdur, StepSize,false,TrajectoryFile);
     BestIndividualFile << Agent.NervousSystem;
 
     double fitness = (Agent.PositionX() - init_x)/testdur; // not reversed here 
@@ -126,7 +126,7 @@ double FitnessFunction(TVector<double>& genotype){
     }
     double init_x = Agent.PositionX();
 
-    Agent.Walk(testdur, StepSize);
+    Agent.Walk(testdur, StepSize, false);
 
     double fit = (Agent.PositionX() - init_x)/testdur;
     fit = fit * (1-2*backwards); //if backwards is true, then we want to minimize forward distance, which is the same as maximizing backward distance

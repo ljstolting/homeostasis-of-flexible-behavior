@@ -191,18 +191,20 @@ void LeggedAgent::Step2CPG(double StepSize, bool adaptpars)
 	// Lindsay's change: set the other direction to zero when necessary. Not present in other places where coordination problem is wrapped into one neuron
 	// Theoretically it would smoothly transition, but not necessarily with discrete steps
 
-	// Update the leg effectors
-	if (o > 0.5) {
-		Leg.ForwardForce = 2 * (o - 0.5) * MaxLegForce;
-		Leg.BackwardForce = 0.0;
-	}
-	else {
-		Leg.BackwardForce = 2 * (0.5 - o) * MaxLegForce;
-		Leg.ForwardForce = 0.0;
-	}
-	// Compute the force applied to the body (*** USING THE "NEW" MODEL ***)
- 		double f = Leg.ForwardForce - Leg.BackwardForce; 
+	// // Update the leg effectors
+	// if (o > 0.5) {
+	// 	Leg.ForwardForce = 2 * (o - 0.5) * MaxLegForce;
+	// 	Leg.BackwardForce = 0.0;
+	// }
+	// else {
+	// 	Leg.BackwardForce = 2 * (0.5 - o) * MaxLegForce;
+	// 	Leg.ForwardForce = 0.0;
+	// }
+	// // Compute the force applied to the body (*** USING THE "NEW" MODEL ***)
+ 	// double f = Leg.ForwardForce - Leg.BackwardForce; 
 
+	//I believe the above is equivalent to saying that f = 2*(o - 0.5)*MaxLegForce, but this way makes it more clear that the force is in the direction of the stronger output
+	double f = 2*(o - 0.5)*MaxLegForce;
 
 	if (Leg.FootState == 1.0){
 		if ((Leg.Angle >= BackwardAngleLimit && Leg.Angle <= ForwardAngleLimit) ||
@@ -227,7 +229,7 @@ void LeggedAgent::Step2CPG(double StepSize, bool adaptpars)
 	}
 	else {
 		vx = 0.0;
-		Leg.Omega	= Leg.Omega + StepSize * MaxTorque * (Leg.BackwardForce - Leg.ForwardForce); //force on the leg is opposite that on the body
+		Leg.Omega	= Leg.Omega + StepSize * MaxTorque * (-f); //force on the leg is opposite that on the body
 		if (Leg.Omega < -MaxOmega) Leg.Omega = -MaxOmega;
 		if (Leg.Omega > MaxOmega) Leg.Omega = MaxOmega;
 		Leg.Angle = Leg.Angle + StepSize * Leg.Omega;
@@ -238,6 +240,9 @@ void LeggedAgent::Step2CPG(double StepSize, bool adaptpars)
 	}
 	// If the foot is too far back, the body becomes "unstable" and forward motion ceases
 	if (fabs(cx - Leg.FootX) > 20) vx = 0.0;
+
+	// Added for this repository for symmetry: If the foot is too far forward, the body becomes "unstable" and backward motion ceases
+	if (fabs(Leg.FootX - cx) > 20) vx = 0.0;
 }
 
 // Step the LeggedAgent using a 2-neuron CTRNN RPG
@@ -447,21 +452,4 @@ void LeggedAgent::PerfectStep(double StepSize)
 	}
 	// If the foot is too far back, the body becomes "unstable" and forward motion ceases
 	if (fabs(cx - Leg.FootX) > 20) vx = 0.0;
-}
-
-void LeggedAgent::Walk(double time, double StepSize, bool adaptpars)
-{	//measure fitness the "dumb" way as distance traveled in a fixed amount of time
-	for(double t = 0; t < time; t += StepSize){
-		Step2CPG(StepSize,adaptpars);
-	}
-
-}
-
-void LeggedAgent::Walk(double time, double StepSize, bool adaptpars, ofstream &outputs)
-{	//measure fitness the "dumb" way as distance traveled in a fixed amount of time
-	for(double t = 0; t < time; t += StepSize){
-		Step2CPG(StepSize,adaptpars);
-		outputs << NervousSystem.outputs << endl;
-	}
-
 }
