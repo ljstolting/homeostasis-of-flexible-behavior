@@ -41,3 +41,6 @@
 *.dwo
 *.err
 *.txt
+
+# IDE files
+*.DS_Store
