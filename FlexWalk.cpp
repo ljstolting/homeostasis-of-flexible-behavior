@@ -10,13 +10,8 @@
 #include "LeggedAgent.h"
 #include "VectorMatrix.h"
 
-//Constants
-const double transient_dur = 150; //transient before adhp activates, also quick check to see if circuit state moving
-const double quick_check_dur = 50; //how long to run the agent to check if the foot goes up and down before doing the full velocity measurement
-const double test_dur = 200;     //maximum duration to run the embodied agent to evaluate the velocity - at max spans two cycles
-const double StepSize = 0.01;
-const double cross_tolerance = 0; //option to shift the threshold away from zero so that parameter jiggle can't influence, if relevant
-const double bubble_tolerance = 5*StepSize; //protects against multi-peak oscillations, calculated in state space
+const double cross_tolerance = 0; //shift the threshold away from zero so that parameter jiggle can't influence, if relevant
+const double bubble_tolerance = 10*StepSize; //excludes multi-peak oscillations, calculated in state space
 
 const bool HPon = true; //turns ADHP on or off during velocity measurement
 
@@ -25,76 +20,250 @@ void step_function(LeggedAgent& Agent){
     Agent.Step2CPG(StepSize,HPon);
 };
 
-//Calcuate the instantaneous walking velocity by running the homeostatic walker for a set time, 
-// then measuring the time and distance of the next full neuron cycle 
-// used to be calculated from peak to peak, now is calculated from footfall to footfall
-double meas_velocity(LeggedAgent& Agent, ofstream &timeseriesfile, ofstream &paramsfile, bool record, double synchronization_time){
-    double vel = 0;
-    //Assume circuit already equilibrated 
-    // do a quick check to see if the foot neuron goes above and below 0.5 (not bothering with body yet)
-    double max_ft = 0;
-    double min_ft = 1;
+// let the circuit equilibrate check if the foot goes up and down before doing the full velocity measurement
+// simultaneously synchronizes the body to the nervous system (better to separate if doing RPG)
+bool quick_osc_check_sync(LeggedAgent& Agent, double transient_dur, double quick_check_dur){
+    double dist = 0; //in state space
+    int N = Agent.NervousSystem.CircuitSize();
+    for (double i = StepSize;i<=transient_dur;i+=StepSize){
+        step_function(Agent);
+    }
+    TVector<double> start(1,N);
+    start = Agent.NervousSystem.states;
     for (double i = StepSize;i<=quick_check_dur;i+=StepSize){
         step_function(Agent);
-        if (record){
-             timeseriesfile << " " << Agent.NervousSystem.outputs << endl;
-             paramsfile << " " << Agent.NervousSystem.biases << endl;
-        }
-        if (Agent.NervousSystem.NeuronOutput(1)>max_ft){max_ft = Agent.NervousSystem.NeuronOutput(1);}
-        if (Agent.NervousSystem.NeuronOutput(1)<min_ft){min_ft = Agent.NervousSystem.NeuronOutput(1);}
+        // cout << "stepped ";
     }
-    if ((max_ft>0.5)&&(min_ft<0.5)){ //if it does, continue
-        // run the body for test duration to sync leg to the nervous system, and for body to get stuck if it's going to get stuck
-        for (double i=StepSize;i<=synchronization_time;i+=StepSize){
-            step_function(Agent);
-            // //record or not record during the leg synchronization time
-            if(record){
-                timeseriesfile << " " << Agent.NervousSystem.outputs << endl;
-                paramsfile << " " << Agent.NervousSystem.biases << endl;
-            }
-        }
-        //run the body until the foot state goes from 0 to 1, then goes from 0 to 1 again
-        int put_down_count = 0;
-        int fmr_ft = 1;
-        int new_ft = 1;
+    for (int i = 1; i <= N; i++){
+        dist += pow(start(i)-Agent.NervousSystem.NeuronState(i),2);
+    }
+    dist = pow(dist,.5);
+    // cout << "dist " << dist << endl;
+    // cout << "bool " << (dist > 0.05) << endl;
+    return (dist>0.05);
+}
+
+void distance_and_time(LeggedAgent& Agent, double &dist_traveled, double &cycle_time, ofstream &timeseriesfile, ofstream &paramsfile, bool recordoutputs, bool recordparams){
+// fix to 1 and zero if it isn't already
+    cycle_time = 1;
+    int cycle_step = 1;
+    dist_traveled = 0;
+    // do a quick check to see if oscillates
+    if(quick_osc_check_sync(Agent)){ //if it does, continue
+        // cout << "oscillating" << endl; 
+        // local variables needed by the function 
+        int peak_count = 0;
+        int N = Agent.NervousSystem.CircuitSize();
+        double test_time = 0;
+        double new_n1_div = 0;
+        double fmr_n1_div = 0;
+        bool flip = false;
+        bool first_step = true;
 
         double st_pos_x = 0;
-        double test_time = 0;
-        double cycle_time = 0;
+        // double max_ft = 0;
+        // double min_ft = 1;
 
-        while ((put_down_count < 2)&&(test_time < test_dur)){
-            if(record){
-                timeseriesfile << " " << Agent.NervousSystem.outputs << endl;
-                paramsfile << " " << Agent.NervousSystem.biases << endl;
-                // bodyfile << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
-            }
-        
+        TVector<double> start(1,N);
+        // cout << "start " << start << endl;
+
+        double dist = 0; //state space
+
+        while ((peak_count<2)&(test_time < test_dur)){
+            if (recordoutputs){timeseriesfile << Agent.NervousSystem.outputs << endl;}
+            if (recordparams){paramsfile << Agent.PositionX() << endl;}
             test_time += StepSize;
 
-            fmr_ft = new_ft;
+            fmr_n1_div = new_n1_div;
+            new_n1_div = Agent.NervousSystem.NeuronState(1);
             step_function(Agent);
-            new_ft = Agent.Leg.FootState;
-            
-            if(fmr_ft - new_ft == -1){ //foot put down 
-                put_down_count += 1;
-                if (put_down_count == 1){
-                    st_pos_x = Agent.PositionX();
+            new_n1_div = Agent.NervousSystem.NeuronState(1) - new_n1_div; //final - initial
+            if (!first_step){
+                if((fmr_n1_div>cross_tolerance)&(new_n1_div<-cross_tolerance)){
+                    if (peak_count == 1){
+                        // cout << "testing: " << Agent.NervousSystem.states << " at " << test_time << endl;
+                        dist = 0;
+                        for (int i = 1; i <= N; i++){
+                            dist += pow(start[i]-Agent.NervousSystem.NeuronState(i),2);
+                        }
+                        dist = pow(dist,.5);
+                        if (dist < bubble_tolerance) {
+                            peak_count += 1;
+                        }
+                    }
+                    if (peak_count == 0){
+                        start = Agent.NervousSystem.states;
+                        // cout << "Start: " << start << " at " << test_time << endl;
+                        peak_count += 1;
+                        cycle_time = 0;
+                        cycle_step = 1;
+                        // cout << "peaked at " << sync_time + test_time << endl;
+                        st_pos_x = Agent.PositionX(); //subtract off the progress that the agent made before the recorded cycle
+                    }
                 }
             }
 
-            if (put_down_count == 1){
+            if (peak_count == 1){
                 cycle_time += StepSize;
+                cycle_step ++;
+                // if (Agent.NervousSystem.NeuronOutput(1)>max_ft){max_ft = Agent.NervousSystem.NeuronOutput(1);}
+                // if (Agent.NervousSystem.NeuronOutput(1)<min_ft){min_ft = Agent.NervousSystem.NeuronOutput(1);}
             }
-        }
 
-        if (put_down_count == 2){
-            double traveled = Agent.PositionX() - st_pos_x;
-            cout << "traveled: " << traveled << endl;
-            vel = traveled/cycle_time;
-            cout << "cycle time: " << cycle_time << endl;
+            first_step = false;   
         }
+        if (peak_count==2){dist_traveled = Agent.PositionX() - st_pos_x;}
     }
+    return;
+}
+
+void distance_and_time(LeggedAgent& Agent, double &dist_traveled, double &cycle_time, TMatrix<double>& timeseries, bool recordoutputs){
+    // fix to 1 and zero if it isn't already
+    cycle_time = 1;
+    int cycle_step = 1;
+    dist_traveled = 0;
+    // do a quick check to see if the foot goes up and down
+    if(quick_osc_check_sync(Agent)){ //if it does, continue
+        // cout << "oscillating" << endl; 
+        // local variables needed by the function 
+        int peak_count = 0;
+        int N = Agent.NervousSystem.CircuitSize();
+        double test_time = 0;
+        double new_n1_div = 0;
+        double fmr_n1_div = 0;
+        bool flip = false;
+        bool first_step = true;
+
+        double st_pos_x = 0;
+        // double max_ft = 0;
+        // double min_ft = 1;
+
+        TVector<double> start(1,N);
+        start = Agent.NervousSystem.states;
+        // cout << "start " << start << endl;
+
+        double dist = 0; //state space
+
+        while ((peak_count<2)&(test_time < test_dur)){
+            test_time += StepSize;
+
+            fmr_n1_div = new_n1_div;
+            new_n1_div = Agent.NervousSystem.NeuronState(1);
+            step_function(Agent);
+            new_n1_div = Agent.NervousSystem.NeuronState(1) - new_n1_div; //final - initial
+            if (!first_step){
+                if((fmr_n1_div>cross_tolerance)&(new_n1_div<cross_tolerance)){
+                    // cout << "peaked at " << test_time << endl;
+                    if (peak_count == 1){
+                        dist = 0;
+                        for (int i = 1; i <= N; i++){
+                            dist += pow(start[i]-Agent.NervousSystem.NeuronState(i),2);
+                        }
+                        dist = pow(dist,.5);
+                        if (dist < bubble_tolerance) {
+                            peak_count += 1;
+                        }
+                    }
+                    if (peak_count == 0){
+                        start = Agent.NervousSystem.states;
+                        peak_count += 1;
+                        cycle_time = 0;
+                        cycle_step = 1;
+                        st_pos_x = Agent.PositionX(); //subtract off the progress that the agent made before the recorded cycle
+                    }
+                }
+            }
+
+            if (peak_count == 1){
+                if(recordoutputs){
+                    // cout << "step" << cycle_step << " ";
+                    for (int i=1;i<=N;i++){
+                        timeseries[cycle_step][i] = Agent.NervousSystem.NeuronOutput(i);
+                    }
+                }
+                cycle_time += StepSize;
+                cycle_step ++;
+                // if (Agent.NervousSystem.NeuronOutput(1)>max_ft){max_ft = Agent.NervousSystem.NeuronOutput(1);}
+                // if (Agent.NervousSystem.NeuronOutput(1)<min_ft){min_ft = Agent.NervousSystem.NeuronOutput(1);}
+            }
+
+            first_step = false;   
+        }
+        if (peak_count==2){dist_traveled = Agent.PositionX() - st_pos_x;}
+        // cout << "peak count " << peak_count << endl;
+    }
+    return;
+}
+//Calcuate the instantaneous walking velocity by running the homeostatic walker for a set time, 
+// then measuring the time and distance of the next full neuron cycle 
+// used to be calculated from peak to peak, now is calculated from footfall to footfall
+// I think there was an ADHP-related reason I had switched it to peak to peak, but footfall seems more robust, so fine for now
+// Modularizing this so that it's easier to use bits and pieces
+double meas_velocity(LeggedAgent& Agent, ofstream &timeseriesfile, ofstream &paramsfile, bool recordoutputs, bool recordparams){
+    double distance = 0;
+    double cycletime = 1; //initialize to 1 to avoid dividing by zero
+    distance_and_time(Agent,distance,cycletime,timeseriesfile,paramsfile,recordoutputs,recordparams);
+    // cout << distance << " " << cycletime << endl;
+    double vel = distance/cycletime;
     return vel;
+}
+
+//override to output to a vector (not consolidating yet in case want to track the parameters at some point)
+double meas_velocity(LeggedAgent& Agent, TMatrix<double>& timeseries, bool recordoutputs){
+    double distance = 0;
+    double cycletime = 1; //initialize to 1 to avoid dividing by zero
+    if (quick_osc_check_sync(Agent)){ //if foot moves, continue
+        distance_and_time(Agent,distance,cycletime,timeseries,recordoutputs);
+    }
+    double vel = distance/cycletime;
+    return vel;
+}
+
+void SortTraj(TVector<double>& sortedtraj, TVector<double>& neurontrajectory){
+    sortedtraj.FillContents(0);
+    for (int i = 1; i <= neurontrajectory.UpperBound();i++){
+        int j = 1;
+        while (sortedtraj[j]>neurontrajectory[i]){
+            j ++;
+        }
+        //find how many elements you need to slide (if any)
+        int k = j;
+        while (sortedtraj[k] > 0){
+            k++;
+        }
+        //slide down whatever is there
+        while (k > j){
+            sortedtraj[k] = sortedtraj[k-1];
+            k --;
+        }
+        sortedtraj[j]=neurontrajectory[i];
+    }
+    return;
+}
+
+double CalcUB(TVector<double>& sortedneurontrajectory, double lb){
+    double area_under = 0;
+    //step through the trajectory
+    int i = sortedneurontrajectory.UpperBound();
+    //add values below lb to the area underneath
+    while(sortedneurontrajectory[i]<lb){
+        area_under += lb - sortedneurontrajectory[i];
+        i --; //iterate backwards because is sorted in descending order
+    //the rest make up the list of points above LB (potential "active" points)
+    }
+    // cout << "C= " << area_under << " with " << i << " points" << endl; 
+    //the cumulative sum of the largest points
+    double cum_sum = 0;
+    double potential_ub = 0;
+    int j = 1;
+    while ((j<=i)&&(potential_ub < sortedneurontrajectory[j])){
+        // cout << "adding value: " << sortedneurontrajectory[j] << endl;
+        cum_sum += sortedneurontrajectory[j];
+        potential_ub = (cum_sum - area_under)/j;
+        // cout << "potential UB #" << j << ": " << potential_ub << " is greater than " << sortedneurontrajectory[j] << "?" << endl;
+        j++;
+    }
+    return potential_ub;
 }
 
 //Given a phenotype and an initialized walker, set up a homeostatic flexible legged walker individual to pass to the fitness function and populates the nm vector
@@ -251,10 +420,10 @@ void Modulate(LeggedAgent& Agent, TVector<double>& neuromodvec){
 }
 
 // these utilities should really be added in vectormatrix but whatever
-void Reverse_NM(TVector<double>& neuromodvec){
+void Reverse_NM(TVector<double>& neuromodvec, TVector<double>& reversedneuromodvec){
     // negates all elements of neuromodulatory vector as presented
     for(int i=neuromodvec.LowerBound();i<=neuromodvec.UpperBound();i++){
-        neuromodvec[i] = -neuromodvec[i];
+        reversedneuromodvec[i] = -neuromodvec[i];
     }
     return;
 }
@@ -282,16 +451,16 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
 
     // cout << "neuromodvec " << neuromodvec << endl;
     int N = Agent.NervousSystem.CircuitSize();
-    // ...and shifting the time constants to the end of the vector
+
+    // format NM by shifting time constants to the end
     Shift_NM(neuromodvec,N);
+    // and store the original neuromod vec with the copy constructor because that's always what we're going to want to try to apply
+    TVector<double> reverse_neuromodvec(1,neuromodvec.UpperBound());
+    Reverse_NM(neuromodvec,reverse_neuromodvec);
     
     // Pass transient without ADHP
-    for (double i=StepSize;i<=transient_dur;i+=StepSize){
+    for (double i=StepSize;i<=150;i+=StepSize){
         Agent.NervousSystem.EulerStep(StepSize,false);
-    }
-
-    if (debug){
-        cout << "unmodulated, before ADHP" << endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
     }
 
     double avg_unmodulated_vel = 0;
@@ -301,124 +470,79 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
     int unmodulated_tests = 0;
     int modulated_tests = 0;
 
-    if (rounds == 0){
-        // Allow ADHP to run for designated time. Now also moves the body because I took away the sync time
-        for (double t = 0; t < plasticitydur; t += StepSize){
-            step_function(Agent);
-            if (debug){
-                timeseriesfile <<  " " << Agent.NervousSystem.outputs << endl;
-                paramsfile << " " << Agent.NervousSystem.biases << endl;
-                // bodyfile << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
-            }
+    //store the effective neuromod vectors and reverse neuromod vectors because we'll be switching back and forth
+    for (int round=1;round<=rounds;round++){
+        if (debug){
+            cout << "unmodulated, before ADHP, before test"<< endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
         }
-        // Test unmodulated velocity at homeostatic steady state - fuckin shit up
-        double init_x = Agent.PositionX();
-        int fmr_ft = 1;
-        int new_ft = 1;
-        double cycle_time = 0;
-        bool first_lil_bit = false;
-        double testdur = 650;
-        
-        for(double t = 0; t < testdur; t += StepSize){
-            fmr_ft = new_ft;
-            Agent.Step2CPG(StepSize,true);
-            new_ft = Agent.Leg.FootState;
-            cycle_time += StepSize;
-            if(fmr_ft - new_ft == -1){
-                if(first_lil_bit){
-                    cout << "cycle: " << cycle_time << endl;
-                }
-                first_lil_bit = true;
-                cycle_time = 0;
-            }
-        }
-        double dist = Agent.PositionX() - init_x;
-        cout << "Distance traveled during test: " << dist << endl;
-        double fit = (Agent.PositionX() - init_x)/testdur;
-        unmodulated_vel = fit;
-
-        // unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug);
+        // Test unmodulated velocity at initial configuration
+        unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug,debug);
         unmodulated_tests ++;
         if (debug){
-            cout << "unmodulated, after ADHP: " << unmodulated_vel << endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
+            cout << "unmodulated, before ADHP, after test: " << unmodulated_vel<< endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl<< endl;
         }
         avg_unmodulated_vel += unmodulated_vel;
-    }
-    else{
-        //store the effective neuromod vectors and reverse neuromod vectors because we'll be switching back and forth
-        for (int round=1;round<=rounds;round++){
-            // Allow ADHP to run for designated time. Also moves the body becasue I took away the sync time
-            for (double i = StepSize; i <= plasticitydur; i += StepSize){
-                step_function(Agent);
-                if (debug){
-                    timeseriesfile << " " << Agent.NervousSystem.outputs << endl;
-                    paramsfile << " " << Agent.NervousSystem.biases << endl;
-                    // bodyfile  << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
-                }
-            }
-            if (debug){
-                cout << "unmodulated, after ADHP, before test" << endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
-            }
-            // Test unmodulated velocity at homeostatic steady state
-            unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug);
-            unmodulated_tests ++;
-            if (debug){
-                cout << "unmodulated, after ADHP, after test: " << unmodulated_vel << endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl<< endl;
-            }
-            avg_unmodulated_vel += unmodulated_vel;
 
-            //apply neuromodulation (default is apply to all parameters)
-            Modulate(Agent,neuromodvec);
+        // Allow ADHP to run for designated time. Also moves the body becasue I took away the sync time
+        for (double i = StepSize; i <= plasticitydur; i += StepSize){
+            step_function(Agent);
             if (debug){
-                cout << "modulated, before ADHP, before test" << endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
+                timeseriesfile << " " << Agent.NervousSystem.outputs << endl;
+                paramsfile << " " << Agent.NervousSystem.biases << endl;
+                // bodyfile  << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
             }
-
-            //and measure the immediate modulated velocity
-            modulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug); 
-            modulated_tests ++;
-            if (debug){
-                cout << "modulated, before ADHP, after test: " << modulated_vel << endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
-            }
-            avg_modulated_vel += modulated_vel;
-
-            //allow plasticity to occur in modulated state
-            for (double i = StepSize; i <= plasticitydur; i += StepSize){
-                step_function(Agent);
-                if (debug){
-                    timeseriesfile << " " << Agent.NervousSystem.outputs << endl;
-                    paramsfile << " " << Agent.NervousSystem.biases << endl;
-                    // bodyfile  << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
-                }
-            }
-            if (debug){
-                cout << "modulated, after ADHP, before test" << endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
-            }
-
-            // measure modulated velocity at modulated homeostatic steady state
-            modulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug);
-            modulated_tests ++;
-            if (debug){
-                cout << "modulated, after ADHP, after test: " << modulated_vel << endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
-            }
-            avg_modulated_vel += modulated_vel;
-
-            //then negate all the elements of the effective neuromodulation
-            Reverse_NM(neuromodvec);
-            //and reverse neuromodulation
-            Modulate(Agent,neuromodvec);
-            if (debug){
-                cout << "unmodulated, before ADHP, before test" << endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
-            }
-
-            //measure the immediate unmodulated velocity
-            unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug);
-            unmodulated_tests ++;
-            if (debug){
-                cout << "unmodulated, before ADHP, after test: " << unmodulated_vel << endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
-            }
-            avg_unmodulated_vel += unmodulated_vel;
         }
+        if (debug){
+            cout << "unmodulated, after ADHP, before test" << endl<< Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
+        }
+        // Test unmodulated velocity at homeostatic steady state
+        unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug,debug);
+        unmodulated_tests ++;
+        if (debug){
+            cout << "unmodulated, after ADHP, after test: " << unmodulated_vel<< endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl<< endl;
+        }
+        avg_unmodulated_vel += unmodulated_vel;
+
+        //apply neuromodulation (default is apply to all parameters)
+        Modulate(Agent,neuromodvec);
+
+        if (debug){
+            cout << "modulated, before ADHP, before test"<< endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
+        }
+
+        //and measure the immediate modulated velocity
+        modulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug,debug); 
+        modulated_tests ++;
+        if (debug){
+            cout << "modulated, before ADHP, after test: " << modulated_vel << endl<< Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
+        }
+        avg_modulated_vel += modulated_vel;
+
+        //allow plasticity to occur in modulated state
+        for (double i = StepSize; i <= plasticitydur; i += StepSize){
+            step_function(Agent);
+            if (debug){
+                timeseriesfile << " " << Agent.NervousSystem.outputs << endl;
+                paramsfile << " " << Agent.NervousSystem.biases << endl;
+                // bodyfile  << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
+            }
+        }
+        if (debug){
+            cout << "modulated, after ADHP, before test"<< endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
+        }
+
+        // measure modulated velocity at modulated homeostatic steady state
+        modulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug,debug);
+        modulated_tests ++;
+        if (debug){
+            cout << "modulated, after ADHP, after test: " << modulated_vel << endl<< Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
+        }
+        avg_modulated_vel += modulated_vel;
+
+        //and reverse neuromodulation
+        Modulate(Agent,reverse_neuromodvec); //caps are always applied in the modulate function, so don't need to calculate ahead of time
     }
+
 
     avg_unmodulated_vel = avg_unmodulated_vel/max(unmodulated_tests,1);
     avg_modulated_vel = avg_modulated_vel/max(modulated_tests,1);

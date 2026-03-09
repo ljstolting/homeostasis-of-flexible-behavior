@@ -157,8 +157,8 @@ void CTRNN::SetCircuitSize(int newsize)
   }
 
   // NEW for CAPPING (ADHP and neuromodulatory parameter setting)
-  wr = 10;
-  br = 10;
+  wr = 16;
+  br = 16;
   tc_min = .1;
   tc_max = 10;
 

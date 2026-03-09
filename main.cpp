@@ -8,8 +8,8 @@
 #include "random.h"
 
 //EA settings
-const int POPSIZE =      370;
-const int GENS =         700;
+const int POPSIZE =      50;
+const int GENS =         10;
 // const int trials = 1;    // number of times to run the EA from random starting pop
 const double MUTVAR =    0.1;
 const double CROSSPROB = 0.0;
@@ -18,7 +18,6 @@ const double ELITISM =   0.1;
 const bool seed_CC =     false; //seed with center crossing circuits?
 
 //CTRNN settings
-const double StepSize = 0.01;
 const int N = 3;          //this repository will not be general to higher neural dimensions - must be 3 neuron CTRNN.
                          //you CAN change the number of neurons that are controlled by ADHP
 //ADHP settings
@@ -28,6 +27,7 @@ const double Btau =      100;  //setting the time constant of regulation to the 
 const double SW =        0;    //setting the sliding window averaging to zero
 
 const double plasticitydur = 5000; //in seconds
+const int rounds = 3;
 
 //Neuromodulation settings
 // const int num_NM =       15; //future: SUM OF SOME INPUT FILE, change genphenmapping function to be general like arbdparam
@@ -176,7 +176,7 @@ double FitnessFunction(TVector<double>& genotype){
     // for(int i = 1; i <= Agent.NervousSystem.CircuitSize(); i ++){
     //     Agent.NervousSystem.SetNeuronBiasTimeConstant(i,Btau);
     // }
-    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur);
+    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,rounds);
 
     return fit;
 }

@@ -42,11 +42,11 @@ public:
 	void FillContents(EltType value);
 	void PushFront(EltType value);
 	void InitializeContents(EltType v1,...);
+	EltType Max(void);
+	EltType Sum(void);
 	// Vector i/o
 	void BinaryWriteVector(ofstream& bofs);
 	void BinaryReadVector(ifstream& binfs);
-	EltType Max(void);
-	EltType Sum(void);
 	// Overloaded operators
 	EltType &operator[](int index)
 	{
@@ -309,6 +309,7 @@ public:
 	int ColumnUpperBound(void) {return ub2;};
 	void SetColumnUpperBound(int newub2) {SetBounds(lb1,ub1,lb2,newub2);};
 	void SetBounds(int newlb1, int newub1, int newlb2, int newub2);
+	void ExtractColumn(int colidx, TVector<EltType>& column);
 	// Overloaded operators
 	EltType* operator[](int index)
 	{
@@ -445,6 +446,22 @@ void TMatrix<EltType>::InitializeContents(EltType v1,...)
 	va_end(ap);
 }
 
+//Extract a column from a Matrix
+//Added by Lindsay Stolting
+template<class EltType>
+void TMatrix<EltType>::ExtractColumn(int colidx, TVector<EltType>& column){
+	if (colidx < lb2 || colidx > ub2){
+		cerr << "Column index out of bounds\n";
+		exit(EXIT_FAILURE);
+	}
+	if (column.UpperBound()!=ub1){
+		cerr << "Bounds of receiving vector must be equal to rows of matrix" << endl;
+		exit(EXIT_FAILURE);
+	}
+	for (int i = lb1; i<=ub1; i++){
+		column[i] = Matrix[i][colidx];
+	}
+}
 
 // Overload the () operator to provide safe indexing
 

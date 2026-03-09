@@ -9,16 +9,12 @@
 #include "random.h"
 
 //CTRNN settings
-const double StepSize = 0.01;
 const int N = 2;         
 
 //ADHP settings
 const int num =          2; //future: SUM OF SOME INPUT FILE
-const double Btau =      100;  //setting the time constant of regulation to the lowest value from before
-const double SW =        0;    //setting the sliding window averaging to zero
 
-const double plasticitydur = 5500; //in seconds
-// const double transient = 150;   
+const double plasticitydur = 5500; //in seconds 
 
 //Neuromodulation settings
 // const int num_NM =       3; //future: SUM OF SOME INPUT FILE, change genphenmapping function to be more like arbdparam
@@ -44,13 +40,14 @@ const int ctrnnvectsize = (2*N)+(N*N);
 const int VectSize = 2*(ctrnnvectsize)+2*N;
 
 //USING BESTIND FILE
-char bestindfname[] = "./best_test.dat";
+char bestindfname[] = "./bestind.dat";
 //USING PHENOTYPE FILE
 // char bestindfname[] = "./best_phen.dat";
 //USING INDIVIDUAL WALKER FILE - DEBUGGING
 // char bestindfname[] = "./Forward Walkers/3/bestind.dat";
 
 char adhpfname[] = "./ADHP Mechanisms/best3_38.dat";
+char trajfname[] = "./Forward Walkers/3/testtrajectory0.dat";
 
 int main(){
     ifstream bestindfile;
@@ -60,8 +57,8 @@ int main(){
     ifstream adhpfile;
     adhpfile.open(adhpfname);
 
-    ofstream trajectoryfile;
-    trajectoryfile.open("./trajectory.dat");
+    ifstream trajectoryfile;
+    trajectoryfile.open(trajfname);
 
     LeggedAgent Agent;
     Agent.NervousSystem.SetCircuitSize(N);
@@ -86,21 +83,17 @@ int main(){
     cout << "ADHP params:" << endl << Agent.NervousSystem.l_boundary << endl << Agent.NervousSystem.u_boundary << endl << Agent.NervousSystem.windowsize << endl << Agent.NervousSystem.tausBiases << endl << Agent.NervousSystem.plasticitypars << endl << endl;
     cout << "neuromodulatory params:" << endl << neuromodvec << endl << endl;
 
-    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,0,true);
+    TVector<double> neural_lc(1,50001);
+    trajectoryfile >> neural_lc;
+    // cout << neural_lc; 
 
-    // for (double t = 0; t < transient; t += StepSize){
-    //     Agent.Step2CPG(StepSize,false);
-    // }
+    TVector<double> sorted_lc(1,50001);
+    SortTraj(sorted_lc,neural_lc);
+    // cout << sorted_lc << endl;
+    double ub = CalcUB(sorted_lc, .6);
+    cout << "Calculated UB: " << ub << endl;
 
-    // double init_x = Agent.PositionX();
-
-    // Agent.Walk(plasticitydur, StepSize, false, trajectoryfile);
-
-    // double fit = (Agent.PositionX() - init_x)/plasticitydur;
-    
-    // cout << Agent.cx << " " << Agent.Leg.FootX << endl;
-    // cout << fit << endl;
-    // -4.49679 -1.90087
+    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,2,true);
 
     bestindfile.close();
     adhpfile.close();
