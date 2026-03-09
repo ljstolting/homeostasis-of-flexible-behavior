@@ -6,11 +6,11 @@
 #SBATCH -e lindsay_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=8:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=16G
 #SBATCH -A r00213
 
-mkdir ./Forward\ Walkers/$JB;
-cd ./Forward\ Walkers/$JB;
-time ../../mainwalkerevol_forward.exe $JB;
+mkdir ./Evolutions_2N/$JB;
+cd ./Evolutions_2N/$JB;
+time ../../main.exe $JB;
 cd ../../;

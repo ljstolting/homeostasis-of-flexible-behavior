@@ -547,7 +547,7 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
     avg_unmodulated_vel = avg_unmodulated_vel/max(unmodulated_tests,1);
     avg_modulated_vel = avg_modulated_vel/max(modulated_tests,1);
 
-    double fit = abs(avg_unmodulated_vel - avg_modulated_vel); //maximum fitness is 2*6.27 --max speed both directions
+    double fit = abs(avg_unmodulated_vel - avg_modulated_vel); //maximum fitness is 2*.627 --max speed both directions
 
     timeseriesfile.close();
     // bodyfile.close();
