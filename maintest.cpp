@@ -41,9 +41,9 @@ const int ctrnnvectsize = (2*N)+(N*N);
 const int VectSize = 2*(ctrnnvectsize)+2*N;
 
 //USING BESTIND FILE
-char bestindfname[] = "./bestind.dat";
+// char bestindfname[] = "./bestind.dat";
 //USING PHENOTYPE FILE
-// char bestindfname[] = "./Evolutions_2N/8/phen.dat";
+char bestindfname[] = "./Evolutions_2N/9/bestind.dat";
 //USING INDIVIDUAL WALKER FILE - DEBUGGING
 // char bestindfname[] = "./Forward Walkers/88/bestind.dat";
 
@@ -66,7 +66,7 @@ double FitnessFunction(ifstream &bestindfile){
     cout << "Initial Parameters: " << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases << endl << Agent.NervousSystem.weights << endl;
     cout << "ADHP params:" << endl << Agent.NervousSystem.l_boundary << endl << Agent.NervousSystem.u_boundary << endl << Agent.NervousSystem.windowsize << endl << Agent.NervousSystem.tausBiases << endl << Agent.NervousSystem.plasticitypars << endl << endl;
     cout << "neuromodulatory params:" << endl << neuromodvec << endl << endl;
-    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,rounds);
+    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,rounds,true);
 
     return fit;
 }

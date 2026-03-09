@@ -18,7 +18,7 @@ void distance_and_time(LeggedAgent& Agent, double &dist_traveled, double &cycle_
 void distance_and_time(LeggedAgent& Agent, double &distancetraveled, double &cycletime, TMatrix<double>& timeseries, bool recordoutputs);
 void SortTraj(TVector<double>& sortedtraj, TVector<double>& neurontraj);
 double CalcUB(TVector<double>& sortedneurontraj, double lb);
-void quick_osc_check_sync(LeggedAgent& Agent, bool &osc, bool &footupdown, double transientdur=500.0, double quick_check_dur=10.0);
+void quick_osc_check_sync(LeggedAgent& Agent, bool &osc, bool &footupdown, double transientdur=250.0, double quick_check_dur=10.0);
 double meas_velocity(LeggedAgent& Agent, ofstream &timeseriesfile, ofstream &paramsfile, bool recordoutputs=false, bool recordparams=false);
 double meas_velocity(LeggedAgent& Agent, TMatrix<double>& timeseries, bool recordoutputs=true); //override to output the trajectory to a local file
 void Setup(TVector<double>& phen, LeggedAgent& Agent, TVector<double>& neuromodvec);//read agent from phenotype vector
