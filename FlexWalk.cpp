@@ -11,7 +11,7 @@
 #include "VectorMatrix.h"
 
 const double cross_tolerance = 0; //shift the threshold away from zero so that parameter jiggle can't influence, if relevant
-const double bubble_tolerance = 10*StepSize; //excludes multi-peak oscillations, calculated in state space
+const double bubble_tolerance = 0.2; //excludes multi-peak oscillations, calculated in state space - don't make too large or too small
 
 const bool HPon = true; //turns ADHP on or off during velocity measurement
 
@@ -22,12 +22,17 @@ void step_function(LeggedAgent& Agent){
 
 // let the circuit equilibrate check if the foot goes up and down before doing the full velocity measurement
 // simultaneously synchronizes the body to the nervous system (better to separate if doing RPG)
-bool quick_osc_check_sync(LeggedAgent& Agent, double transient_dur, double quick_check_dur){
+void quick_osc_check_sync(LeggedAgent& Agent, bool &osc, bool &footupdown, double transient_dur, double quick_check_dur){
     double dist = 0; //in state space
     int N = Agent.NervousSystem.CircuitSize();
+    int footmax = 0;
+    int footmin = 1;
     for (double i = StepSize;i<=transient_dur;i+=StepSize){
         step_function(Agent);
+        if (Agent.Leg.FootState>footmax){footmax=1;}
+        if (Agent.Leg.FootState<footmin){footmin=0;}
     }
+    footupdown = (footmax-footmin==1);
     TVector<double> start(1,N);
     start = Agent.NervousSystem.states;
     for (double i = StepSize;i<=quick_check_dur;i+=StepSize){
@@ -40,7 +45,7 @@ bool quick_osc_check_sync(LeggedAgent& Agent, double transient_dur, double quick
     dist = pow(dist,.5);
     // cout << "dist " << dist << endl;
     // cout << "bool " << (dist > 0.05) << endl;
-    return (dist>0.05);
+    osc = (dist>0.05);
 }
 
 void distance_and_time(LeggedAgent& Agent, double &dist_traveled, double &cycle_time, ofstream &timeseriesfile, ofstream &paramsfile, bool recordoutputs, bool recordparams){
@@ -48,8 +53,10 @@ void distance_and_time(LeggedAgent& Agent, double &dist_traveled, double &cycle_
     cycle_time = 1;
     int cycle_step = 1;
     dist_traveled = 0;
-    // do a quick check to see if oscillates
-    if(quick_osc_check_sync(Agent)){ //if it does, continue
+    // do a quick check to see if oscillates and whether the foot goes up and down
+    bool footupdown,osc;
+    quick_osc_check_sync(Agent,osc,footupdown);
+    if(osc){ //if it oscillates, continue on to get the limit cycle
         // cout << "oscillating" << endl; 
         // local variables needed by the function 
         int peak_count = 0;
@@ -112,7 +119,7 @@ void distance_and_time(LeggedAgent& Agent, double &dist_traveled, double &cycle_
 
             first_step = false;   
         }
-        if (peak_count==2){dist_traveled = Agent.PositionX() - st_pos_x;}
+        if ((peak_count==2)&&(footupdown)){dist_traveled = Agent.PositionX() - st_pos_x;}
     }
     return;
 }
@@ -123,7 +130,9 @@ void distance_and_time(LeggedAgent& Agent, double &dist_traveled, double &cycle_
     int cycle_step = 1;
     dist_traveled = 0;
     // do a quick check to see if the foot goes up and down
-    if(quick_osc_check_sync(Agent)){ //if it does, continue
+    bool footupdown,osc;
+    quick_osc_check_sync(Agent,osc,footupdown);
+    if(osc){ //if it does, continue
         // cout << "oscillating" << endl; 
         // local variables needed by the function 
         int peak_count = 0;
@@ -189,7 +198,7 @@ void distance_and_time(LeggedAgent& Agent, double &dist_traveled, double &cycle_
 
             first_step = false;   
         }
-        if (peak_count==2){dist_traveled = Agent.PositionX() - st_pos_x;}
+        if ((peak_count==2)&&footupdown){dist_traveled = Agent.PositionX() - st_pos_x;}
         // cout << "peak count " << peak_count << endl;
     }
     return;
@@ -212,9 +221,12 @@ double meas_velocity(LeggedAgent& Agent, ofstream &timeseriesfile, ofstream &par
 double meas_velocity(LeggedAgent& Agent, TMatrix<double>& timeseries, bool recordoutputs){
     double distance = 0;
     double cycletime = 1; //initialize to 1 to avoid dividing by zero
-    if (quick_osc_check_sync(Agent)){ //if foot moves, continue
+    bool footupdown,osc;
+    quick_osc_check_sync(Agent,osc,footupdown);
+    if(osc){ //if foot moves, continue
         distance_and_time(Agent,distance,cycletime,timeseries,recordoutputs);
     }
+    if (!footupdown){distance = 0;}
     double vel = distance/cycletime;
     return vel;
 }

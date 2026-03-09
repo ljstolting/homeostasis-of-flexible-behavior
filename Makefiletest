@@ -10,7 +10,7 @@ FlexWalk.o: FlexWalk.cpp CTRNN.h LeggedAgent.h VectorMatrix.h FlexWalk.h
 	g++ -pthread -c -O3 Flexwalk.cpp
 TSearch.o: TSearch.cpp TSearch.h
 	g++ -pthread -c -O3 TSearch.cpp
-maintest.o: maintest.cpp CTRNN.h TSearch.h FlexWalk.h
+maintest.o: maintest.cpp CTRNN.h LeggedAgent.h TSearch.h FlexWalk.h VectorMatrix.h random.h
 	g++ -pthread -c -O3 maintest.cpp
 clean:
 	rm *.o maintest.exe

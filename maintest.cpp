@@ -14,7 +14,8 @@ const int N = 2;
 //ADHP settings
 const int num =          2; //future: SUM OF SOME INPUT FILE
 
-const double plasticitydur = 5500; //in seconds 
+const double plasticitydur = 5000; //in seconds 
+const int rounds = 3;
 
 //Neuromodulation settings
 // const int num_NM =       3; //future: SUM OF SOME INPUT FILE, change genphenmapping function to be more like arbdparam
@@ -42,22 +43,46 @@ const int VectSize = 2*(ctrnnvectsize)+2*N;
 //USING BESTIND FILE
 char bestindfname[] = "./bestind.dat";
 //USING PHENOTYPE FILE
-// char bestindfname[] = "./best_phen.dat";
+// char bestindfname[] = "./Evolutions_2N/8/phen.dat";
 //USING INDIVIDUAL WALKER FILE - DEBUGGING
-// char bestindfname[] = "./Forward Walkers/3/bestind.dat";
+// char bestindfname[] = "./Forward Walkers/88/bestind.dat";
 
-char adhpfname[] = "./ADHP Mechanisms/best3_38.dat";
-char trajfname[] = "./Forward Walkers/3/testtrajectory0.dat";
+// char adhpfname[] = "./ADHP Mechanisms/test_Forward.dat";
+char trajfname[] = "./Backward Walkers/test/testtrajectory.dat";
+
+double FitnessFunction(ifstream &bestindfile){
+    // cout << "Fitness func started " << endl;
+    // TVector<double> phenotype(1,genotype.UpperBound());
+    // GenPhenMapping(genotype,phenotype);
+    // cout << "mapped" << endl;
+    LeggedAgent Agent; //should return with 3 neurons by default....
+    Agent.NervousSystem.SetCircuitSize(N);
+    cout << Agent.NervousSystem.CircuitSize() << endl;
+    TVector<double> neuromodvec(1,ctrnnvectsize);
+    Setup(bestindfile, Agent, neuromodvec);
+    // for(int i = 1; i <= Agent.NervousSystem.CircuitSize(); i ++){
+    //     Agent.NervousSystem.SetNeuronBiasTimeConstant(i,Btau);
+    // }
+    cout << "Initial Parameters: " << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases << endl << Agent.NervousSystem.weights << endl;
+    cout << "ADHP params:" << endl << Agent.NervousSystem.l_boundary << endl << Agent.NervousSystem.u_boundary << endl << Agent.NervousSystem.windowsize << endl << Agent.NervousSystem.tausBiases << endl << Agent.NervousSystem.plasticitypars << endl << endl;
+    cout << "neuromodulatory params:" << endl << neuromodvec << endl << endl;
+    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,rounds);
+
+    return fit;
+}
 
 int main(){
     ifstream bestindfile;
     bestindfile.open(bestindfname);
 
     //debugging
-    ifstream adhpfile;
-    adhpfile.open(adhpfname);
+    // ifstream adhpfile;
+    // adhpfile.open(adhpfname);
 
-    ifstream trajectoryfile;
+    ofstream paramfile;
+    paramfile.open("./Backward Walkers/test/bodytest.dat");
+
+    ofstream trajectoryfile;
     trajectoryfile.open(trajfname);
 
     LeggedAgent Agent;
@@ -65,7 +90,7 @@ int main(){
     TVector<double> neuromodvec(1,ctrnnvectsize);
 
     // USING BESTIND FILE
-    Setup(bestindfile,Agent,neuromodvec);
+    // Setup(bestindfile,Agent,neuromodvec);
 
     //USING PHENOTYPE FILE
     // TVector<double> phenotype(1,VectSize);
@@ -79,24 +104,41 @@ int main(){
     // Agent.NervousSystem.ShiftedRho(true);
     // Agent.NervousSystem.SetHPPhenotype(adhpfile, StepSize, true);
 
-    cout << "Initial Parameters: " << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases << endl << Agent.NervousSystem.weights << endl;
-    cout << "ADHP params:" << endl << Agent.NervousSystem.l_boundary << endl << Agent.NervousSystem.u_boundary << endl << Agent.NervousSystem.windowsize << endl << Agent.NervousSystem.tausBiases << endl << Agent.NervousSystem.plasticitypars << endl << endl;
-    cout << "neuromodulatory params:" << endl << neuromodvec << endl << endl;
+    // cout << "Initial Parameters: " << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases << endl << Agent.NervousSystem.weights << endl;
+    // cout << "ADHP params:" << endl << Agent.NervousSystem.l_boundary << endl << Agent.NervousSystem.u_boundary << endl << Agent.NervousSystem.windowsize << endl << Agent.NervousSystem.tausBiases << endl << Agent.NervousSystem.plasticitypars << endl << endl;
+    // cout << "neuromodulatory params:" << endl << neuromodvec << endl << endl;
 
-    TVector<double> neural_lc(1,50001);
-    trajectoryfile >> neural_lc;
+    // TVector<double> neural_lc(1,50001);
+    // trajectoryfile >> neural_lc;
     // cout << neural_lc; 
 
-    TVector<double> sorted_lc(1,50001);
-    SortTraj(sorted_lc,neural_lc);
-    // cout << sorted_lc << endl;
-    double ub = CalcUB(sorted_lc, .6);
-    cout << "Calculated UB: " << ub << endl;
+    // TVector<double> sorted_lc(1,50001);
+    // SortTraj(sorted_lc,neural_lc);
+    // // cout << sorted_lc << endl;
+    // double ub = CalcUB(sorted_lc, .6);
+    // cout << "Calculated UB: " << ub << endl;
+    // for(double t=StepSize;t<=20000;t+=StepSize){
+    //     Agent.Step2CPG(StepSize,true);
+    //     paramfile << Agent.NervousSystem.biases << endl;
+    // }
 
-    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,2,true);
+    // cout << "after ADHP " << Agent.NervousSystem.biases << endl;
+
+    // for (int i = 1; i <= 10; i++){
+    //     double fit = meas_velocity(Agent,trajectoryfile,paramfile, true);
+        
+    //     cout << fit << endl;
+    // }
+
+    // cout << "after testing " << Agent.NervousSystem.biases << endl;
+
+    // double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,rounds,true);
+    double fit = FitnessFunction(bestindfile);
+    cout << fit << endl;
 
     bestindfile.close();
-    adhpfile.close();
+    // adhpfile.close();
+    paramfile.close();
     trajectoryfile.close();
 
     return 0;

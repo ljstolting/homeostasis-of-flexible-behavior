@@ -8,8 +8,8 @@
 #include "random.h"
 
 //EA settings
-const int POPSIZE =      5000;
-const int GENS =         250;
+const int POPSIZE =      500;
+const int GENS =         2;
 // const int trials = 1;    // number of times to run the EA from random starting pop
 const double MUTVAR =    0.1;
 const double CROSSPROB = 0.0;
