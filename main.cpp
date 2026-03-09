@@ -18,11 +18,11 @@ const double ELITISM =   0.1;
 const bool seed_CC =     false; //seed with center crossing circuits?
 
 //CTRNN settings
-const int N = 3;          //this repository will not be general to higher neural dimensions - must be 3 neuron CTRNN.
-                         //you CAN change the number of neurons that are controlled by ADHP
+const int N = 2;
+
 //ADHP settings
 const bool shiftedrho = true;
-const int num =          3; //future: SUM OF SOME INPUT FILE
+const int num =          2; //future: SUM OF SOME INPUT FILE
 const double Btau =      100;  //setting the time constant of regulation to the lowest value from before
 const double SW =        0;    //setting the sliding window averaging to zero
 
