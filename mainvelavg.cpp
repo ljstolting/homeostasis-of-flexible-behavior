@@ -33,15 +33,15 @@ int num_LB_steps = int((LB_stop-LB_start)/LB_step)+1;
 // Specifies circuit sampling resolution (each dimension in a row with start, stop ,step)
 char resfname[] = "./circuitsamplingres.dat";
 // Specifies a circuit around which to center the plane (specifies non-homeostatic parameters)
-char circuitfname[] = "./Backward Walkers/38/bestind.dat";
+char circuitfname[] = "./Evolutions_2N/8/extracted_bw.dat";
 
 //OUTPUT FILES
 // Holds average values for each neuron for every circuit
-char avgsfname[] = "./Backward Walkers/38/avgs.dat";
+char avgsfname[] = "./Evolutions_2N/8/extracted_bwavgs.dat";
 // Holds walking velocity (fitness) values for every circuit
-char velfname[] = "./Backward Walkers/38/vel.dat";
+char velfname[] = "./Evolutions_2N/8/extracted_bwvel.dat";
 // Holds boundary curve for each neuron for every circuit
-char boundcurvefname[] = "./Backward Walkers/38/boundcurve.dat";
+char boundcurvefname[] = "./Evolutions_2N/8/extracted_bwboundcurve.dat";
 
 void CalcAvgandBoundCurve(TMatrix<double> &boundcurve, TVector<double> &avgval, double &velocity, LeggedAgent Agent){
     // set boundcurve vector, avg, and fitness to zeros if not already

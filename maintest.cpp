@@ -41,7 +41,7 @@ const int ctrnnvectsize = (2*N)+(N*N);
 const int VectSize = 2*(ctrnnvectsize)+2*N;
 
 //USING BESTIND FILE
-char bestindfname[] = "./designedbestind.dat";
+char bestindfname[] = "./Evolutions_2N/8/bestind.dat";
 //USING PHENOTYPE FILE
 // char bestindfname[] = "./Evolutions_2N/8/phen.dat";
 //USING INDIVIDUAL WALKER FILE - DEBUGGING
