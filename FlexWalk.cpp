@@ -78,7 +78,7 @@ void distance_and_time(LeggedAgent& Agent, double &dist_traveled, double &cycle_
 
         while ((peak_count<2)&(test_time < test_dur)){
             if (recordoutputs){timeseriesfile << Agent.NervousSystem.outputs << endl;}
-            if (recordparams){paramsfile << Agent.PositionX() << endl;}
+            if (recordparams){paramsfile << Agent.NervousSystem.biases << endl;}
             test_time += StepSize;
 
             fmr_n1_div = new_n1_div;
@@ -453,7 +453,7 @@ void Shift_NM(TVector<double>& neuromodvec,int shift_num){
 
 
 //given a set up individual, calculate the fitness as prescribed
-double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double plasticitydur,int rounds, bool debug){
+double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double plasticitydur,int rounds, bool debug, bool record){
     ofstream timeseriesfile;
     timeseriesfile.open("neuraltimeseries.dat");
     ofstream paramsfile;
@@ -488,7 +488,7 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
             cout << "unmodulated, before ADHP, before test"<< endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
         }
         // Test unmodulated velocity at initial configuration
-        unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug,debug);
+        unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,record,record);
         unmodulated_tests ++;
         if (debug){
             cout << "unmodulated, before ADHP, after test: " << unmodulated_vel<< endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl<< endl;
@@ -498,9 +498,9 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
         // Allow ADHP to run for designated time. Also moves the body becasue I took away the sync time
         for (double i = StepSize; i <= plasticitydur; i += StepSize){
             step_function(Agent);
-            if (debug){
-                timeseriesfile << " " << Agent.NervousSystem.outputs << endl;
-                paramsfile << " " << Agent.NervousSystem.biases << endl;
+            if (record){
+                timeseriesfile << Agent.NervousSystem.outputs << endl;
+                paramsfile << Agent.NervousSystem.biases << endl;
                 // bodyfile  << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
             }
         }
@@ -508,7 +508,7 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
             cout << "unmodulated, after ADHP, before test" << endl<< Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
         }
         // Test unmodulated velocity at homeostatic steady state
-        unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug,debug);
+        unmodulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,record,record);
         unmodulated_tests ++;
         if (debug){
             cout << "unmodulated, after ADHP, after test: " << unmodulated_vel<< endl << Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl<< endl;
@@ -523,7 +523,7 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
         }
 
         //and measure the immediate modulated velocity
-        modulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug,debug); 
+        modulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,record,record); 
         modulated_tests ++;
         if (debug){
             cout << "modulated, before ADHP, after test: " << modulated_vel << endl<< Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;
@@ -533,9 +533,9 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
         //allow plasticity to occur in modulated state
         for (double i = StepSize; i <= plasticitydur; i += StepSize){
             step_function(Agent);
-            if (debug){
-                timeseriesfile << " " << Agent.NervousSystem.outputs << endl;
-                paramsfile << " " << Agent.NervousSystem.biases << endl;
+            if (record){
+                timeseriesfile << Agent.NervousSystem.outputs << endl;
+                paramsfile << Agent.NervousSystem.biases << endl;
                 // bodyfile  << " " << Agent.vx << " " << Agent.Leg.ForwardForce-Agent.Leg.BackwardForce << " " << Agent.Leg.FootX << endl;
             }
         }
@@ -544,7 +544,7 @@ double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec,double pla
         }
 
         // measure modulated velocity at modulated homeostatic steady state
-        modulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,debug,debug);
+        modulated_vel = meas_velocity(Agent,timeseriesfile,paramsfile,record,record);
         modulated_tests ++;
         if (debug){
             cout << "modulated, after ADHP, after test: " << modulated_vel << endl<< Agent.NervousSystem.taus << endl << Agent.NervousSystem.biases <<endl <<Agent.NervousSystem.weights << endl << endl;

@@ -41,14 +41,14 @@ const int ctrnnvectsize = (2*N)+(N*N);
 const int VectSize = 2*(ctrnnvectsize)+2*N;
 
 //USING BESTIND FILE
-// char bestindfname[] = "./bestind.dat";
+char bestindfname[] = "./designedbestind.dat";
 //USING PHENOTYPE FILE
-char bestindfname[] = "./Evolutions_2N/9/bestind.dat";
+// char bestindfname[] = "./Evolutions_2N/8/phen.dat";
 //USING INDIVIDUAL WALKER FILE - DEBUGGING
-// char bestindfname[] = "./Forward Walkers/88/bestind.dat";
+// char bestindfname[] = "./Backward Walkers/38/bestind.dat";
 
 // char adhpfname[] = "./ADHP Mechanisms/test_Forward.dat";
-char trajfname[] = "./Backward Walkers/test/testtrajectory.dat";
+// char trajfname[] = "./Backward Walkers/38/trajectory.dat";
 
 double FitnessFunction(ifstream &bestindfile){
     // cout << "Fitness func started " << endl;
@@ -79,18 +79,21 @@ int main(){
     // ifstream adhpfile;
     // adhpfile.open(adhpfname);
 
-    ofstream paramfile;
-    paramfile.open("./Backward Walkers/test/bodytest.dat");
+    // ofstream paramfile;
+    // paramfile.open("./paramtrack.dat");
 
-    ofstream trajectoryfile;
-    trajectoryfile.open(trajfname);
+    // ofstream ubsfile;
+    // ubsfile.open("./calculatedubs_bw38.dat");
+
+    // ifstream trajectoryfile;
+    // trajectoryfile.open(trajfname);
 
     LeggedAgent Agent;
     Agent.NervousSystem.SetCircuitSize(N);
     TVector<double> neuromodvec(1,ctrnnvectsize);
 
     // USING BESTIND FILE
-    // Setup(bestindfile,Agent,neuromodvec);
+    Setup(bestindfile,Agent,neuromodvec);
 
     //USING PHENOTYPE FILE
     // TVector<double> phenotype(1,VectSize);
@@ -110,13 +113,17 @@ int main(){
 
     // TVector<double> neural_lc(1,50001);
     // trajectoryfile >> neural_lc;
-    // cout << neural_lc; 
+    // // cout << neural_lc; 
 
     // TVector<double> sorted_lc(1,50001);
     // SortTraj(sorted_lc,neural_lc);
     // // cout << sorted_lc << endl;
-    // double ub = CalcUB(sorted_lc, .6);
-    // cout << "Calculated UB: " << ub << endl;
+    // for(double lb=0.1;lb<=0.9;lb+=0.01){
+    //     double ub = CalcUB(sorted_lc, lb);
+    //     ubsfile << ub << endl;
+    // }
+    
+
     // for(double t=StepSize;t<=20000;t+=StepSize){
     //     Agent.Step2CPG(StepSize,true);
     //     paramfile << Agent.NervousSystem.biases << endl;
@@ -132,14 +139,15 @@ int main(){
 
     // cout << "after testing " << Agent.NervousSystem.biases << endl;
 
-    // double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,rounds,true);
-    double fit = FitnessFunction(bestindfile);
-    cout << fit << endl;
+    double fit = FlexibleWalking(Agent,neuromodvec,plasticitydur,rounds,true,true);
+    // double fit = FitnessFunction(bestindfile);
+    // cout << fit << endl;
 
     bestindfile.close();
     // adhpfile.close();
-    paramfile.close();
-    trajectoryfile.close();
+    // paramfile.close();
+    // trajectoryfile.close();
+    // ubsfile.close();
 
     return 0;
 }

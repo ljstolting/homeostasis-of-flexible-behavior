@@ -28,4 +28,4 @@ void Modulate(LeggedAgent& Agent, TVector<double>& neuromodvec);
 void Modulate(LeggedAgent& Agent, TVector<double>& neuromodvec, TVector<int>& modulatedpars); //overload to allow specification of different modulated parameters
 // void Reverse_NM(TVector<double>& neuromodvec);
 void Shift_NM(TVector<double>& neuromodvec,int shift_num);
-double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec, double plasticitydur, int rounds, bool debug=false);
+double FlexibleWalking(LeggedAgent& Agent,TVector<double> neuromodvec, double plasticitydur, int rounds, bool debug=false, bool record=false);

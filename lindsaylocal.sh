@@ -1,3 +1,3 @@
 cd ./Backward\ Walkers/$JB;
-time ../../mainwalkerfitness.exe $JB;
+../../mainubcurves.exe;
 cd ../../;
