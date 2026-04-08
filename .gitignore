@@ -44,3 +44,6 @@
 
 # IDE files
 *.DS_Store
+*.vscode
+*.json
+*.venv
