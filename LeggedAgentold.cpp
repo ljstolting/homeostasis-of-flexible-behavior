@@ -454,22 +454,3 @@ void LeggedAgent::PerfectStep(double StepSize)
 	// If the foot is too far back, the body becomes "unstable" and forward motion ceases
 	if (fabs(cx - Leg.FootX) > 20) vx = 0.0;
 }
-
-// Step the 2N Agent using up and down epochs with fixed values and lengths and perfectly timed foot transitions
-//     ftcoord_fw true means coordinate it for a forward walker and false means coordinate it for a backward walker
-void LeggedAgent::PolicyStep(double FBSval, bool ftcoord_fw){
-	// handle foot coordination
-
-	if (NervousSystem.NeuronOutput(1) > 0.5) {Leg.FootState = 1; Leg.Omega = 0;}
-	else Leg.FootState = 0;
-
-	double o = FBSval;
-
-	// do step
-	return;
-}
-
-void LeggedAgent::PolicyRun(double upval, double downval, double updur, double downdur, bool ftcoord_fw){
-	// execute steps with proper timing
-	return;
-}

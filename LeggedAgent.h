@@ -62,8 +62,8 @@ class LeggedAgent {
 		void Step1CPG(double StepSize, bool adaptpars);
 		void Step1RPG(double StepSize, bool adaptpars);
 		void PerfectStep(double StepSize);
-		void PolicyStep(double FBSval, bool ftcoord_fw);
-		void PolicyRun(double upval, double downval, double updur, double downdur, bool ftcoord_fw);
+		void PolicyStep(double FBSval, double footstate, double StepSize);
+		void PolicyRun(double upval, double downval, double updur, double downdur, double totaldur, bool ftcoord_fw, double StepSize);
 
 		double cx, cy, vx;
 		TLeg Leg;

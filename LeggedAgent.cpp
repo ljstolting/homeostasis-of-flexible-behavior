@@ -32,8 +32,10 @@ void LeggedAgent::Reset(double ix, double iy, int randomize)
 	Leg.JointX = cx; Leg.JointY = cy + 12.5;
 	Leg.FootX = Leg.JointX + LegLength * sin(Leg.Angle);
 	Leg.FootY = Leg.JointY + LegLength * cos(Leg.Angle);
-	if (randomize) NervousSystem.RandomizeCircuitState(-0.1,0.1);
-	else NervousSystem.RandomizeCircuitOutput(0.5,0.5);
+	if (randomize){
+		NervousSystem.RandomizeCircuitState(-0.1,0.1);
+		cout << "circuit state randomized" << endl;
+	}
 }
 
 void LeggedAgent::Reset(double ix, double iy, int randomize, RandomState &rs)
@@ -47,7 +49,6 @@ void LeggedAgent::Reset(double ix, double iy, int randomize, RandomState &rs)
 	Leg.FootX = Leg.JointX + LegLength * sin(Leg.Angle);
 	Leg.FootY = Leg.JointY + LegLength * cos(Leg.Angle);
 	if (randomize) NervousSystem.RandomizeCircuitState(-0.1,0.1,rs);
-	else NervousSystem.RandomizeCircuitOutput(0.5,0.5);
 }
 
 void LeggedAgent::DragBack(void)
@@ -250,4 +251,57 @@ void LeggedAgent::PerfectStep(double StepSize)
 	}
 	// If the foot is too far back, the body becomes "unstable" and forward motion ceases
 	if (fabs(cx - Leg.FootX) > 20) vx = 0.0;
+}
+
+// Step the 2N Agent using up and down epochs with fixed values and lengths and perfectly timed foot transitions
+//     ftcoord_fw true means coordinate it for a forward walker and false means coordinate it for a backward walker
+void LeggedAgent::PolicyStep(double FBSval, double footstate, double StepSize){
+	// equivalent to 2N-CPG but without the nervous system update
+	Leg.FootState = footstate;
+	
+    double o = FBSval;
+
+	if (o > 0.5) {
+		Leg.ForwardForce = 2 * (o - 0.5) * MaxLegForce;
+		Leg.BackwardForce = 0.0;
+	}
+	else {
+		Leg.BackwardForce = 2 * (0.5 - o) * MaxLegForce;
+		Leg.ForwardForce = 0.0;
+	}
+	
+    UpdateBody(StepSize);
+	return;
+}
+
+void LeggedAgent::PolicyRun(double upval, double downval, double updur, double downdur, double totaldur, bool ftcoord_fw, double StepSize){
+	double time = StepSize;
+	double footstate_up, footstate_down;
+
+	if (ftcoord_fw){
+		footstate_up = 1;
+		footstate_down = 0;
+	}
+	else{
+		footstate_up = 0;
+		footstate_down = 1;
+	}
+
+	while (time < totaldur){
+		// up phase (stance for forward and swing for backward)
+		for (double t = 0; t<updur; t += StepSize){
+			PolicyStep(upval,footstate_up,StepSize);
+			time += StepSize;
+			if (time > totaldur){return;}
+		}
+
+		// down phase (swing for forward, stance for backward)
+		for (double t = 0; t<downdur; t += StepSize){
+			PolicyStep(downval,footstate_down,StepSize);
+			time += StepSize;
+			if (time > totaldur){return;}
+		}
+	}
+
+	return;
 }

@@ -1,0 +1,12 @@
+maintestpolicy.exe: maintestpolicy.o CTRNN.o random.o LeggedAgent.o 
+	g++ -pthread -o maintestpolicy.exe maintestpolicy.o CTRNN.o random.o LeggedAgent.o
+random.o: random.cpp random.h VectorMatrix.h
+	g++ -pthread -c -O3 random.cpp
+CTRNN.o: CTRNN.cpp random.h VectorMatrix.h CTRNN.h
+	g++ -pthread -c -O3 CTRNN.cpp
+LeggedAgent.o: LeggedAgent.cpp CTRNN.h random.h LeggedAgent.h
+	g++ -pthread -c -O3 LeggedAgent.cpp
+maintestpolicy.o: maintestpolicy.cpp CTRNN.h LeggedAgent.h random.h
+	g++ -pthread -c -O3 maintestpolicy.cpp
+clean:
+	rm *.o maintestpolicy.exe

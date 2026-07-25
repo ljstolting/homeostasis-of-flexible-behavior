@@ -56,10 +56,8 @@ inline double InverseSigmoid(double y)
 
 class CTRNN {
     public:
-        // The default constructor
-        CTRNN();
-        // Other constructor?
-        CTRNN(int size);
+        // The constructor
+        CTRNN(int newsize = 0);
         // The destructor
         ~CTRNN();
 
