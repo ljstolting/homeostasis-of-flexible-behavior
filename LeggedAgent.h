@@ -34,30 +34,38 @@ class TLeg {
 
 class LeggedAgent {
 	public:
-		//Data members
-		double cx, cy, vx;
-		TLeg Leg;
-		CTRNN NervousSystem; 
-
-	public:
 		// The constructor
 		LeggedAgent(double ix = 0.0, double iy = 0.0)
-			: NervousSystem(3)
 		{
-			Reset(ix,iy);
+			Reset(ix,iy,0);
 		};
+		// Copy constructor (new Lindsay, might not work right)
+		LeggedAgent(LeggedAgent&) = default;
+
 		// The destructor
 		~LeggedAgent() {};
 
 		// Accessors
 		double PositionX(void) {return cx;};
-		// void SetPositionX(double newx) ; //was causing problems so took out
+		void SetPositionX(double newx) {cx = newx;};
 
 		// Control
-		void Reset(double ix, double iy, int randomize = 0);
-		void Reset(double ix, double iy, int randomize, RandomState &rs);
-		void DragBack(void);
-		void StepCPG(double StepSize, bool adaptpars); 
-		void Step2CPG(double StepSize, bool adaptpars); // updated to read out foot and force neurons instead of fs, bs
+    void Reset(double ix, double iy, int randomize = 0);
+    void Reset(double ix, double iy, int randomize, RandomState &rs);
+	void DragBack(void);
+		// stepping actuators
+		void UpdateBody(double StepSize);
+		void StepCPG(double StepSize, bool adaptpars);
+		void StepRPG(double StepSize, bool adaptpars);
+		void Step2CPG(double StepSize, bool adaptpars);
+		void Step2RPG(double StepSize, bool adaptpars);
+		void Step1CPG(double StepSize, bool adaptpars);
+		void Step1RPG(double StepSize, bool adaptpars);
 		void PerfectStep(double StepSize);
+		void PolicyStep(double FBSval, bool ftcoord_fw);
+		void PolicyRun(double upval, double downval, double updur, double downdur, bool ftcoord_fw);
+
+		double cx, cy, vx;
+		TLeg Leg;
+		CTRNN NervousSystem;
 };
